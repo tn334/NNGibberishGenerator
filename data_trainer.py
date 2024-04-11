@@ -21,7 +21,7 @@ class FrequencyTree:
                 currentNode.children[char] = TreeNode() # add child node
                 currentNode.children[char].letter = char # store letter in node
             
-            # move to next letter (node)
+            # move to next letter (node) and increase frequency count of letter at node
             currentNode = currentNode.children[char]
             currentNode.frequencyCount += 1
         
@@ -40,9 +40,29 @@ class FrequencyTree:
             # Pass the updated prefix and is_last flag based on whether the child is the last in its siblings
             self.printTree(child, prefix, currentIteration == len(children) - 1)
 
+
+def writeTreeToFile(tree, filename):
+    # Open the file in write mode with UTF-8 encoding
+    with open(filename, 'w', encoding='utf-8') as file:
+        def printTreeToFile(node=None, prefix="", is_last_sibling=True):
+            if node is None:
+                node = tree.root
+            else: # Printing nodes other than the root
+                branch_symbol = "└── " if is_last_sibling else "├── "
+                file.write(f"{prefix}{branch_symbol}{node.letter} (count: {node.frequencyCount})\n")
+                prefix += "    " if is_last_sibling else "│   " # adjust output based on next nodes siblings
+            
+            children = list(node.children.values())
+            for currentIteration, child in enumerate(children):
+                # Pass the updated prefix and is_last flag based on whether the child is the last in its siblings
+                printTreeToFile(child, prefix, currentIteration == len(children) - 1)
+        
+        # Start the recursive function call
+        printTreeToFile()
+
 def main():
     # read all words in txt file
-    with open('test.txt', 'r') as file:
+    with open('words_alpha.txt', 'r') as file:
         words = file.readlines()
 
     tree = FrequencyTree()
@@ -50,8 +70,12 @@ def main():
     for word in words:
         word = word.strip()
         tree.insertWord(word)
-    
-    tree.printTree()
+
+    # # print entire tree in terminal    
+    # tree.printTree()
+
+    # # write entire tree to file
+    # writeTreeToFile(tree, 'frequency_tree_output.txt')
 
 
 
