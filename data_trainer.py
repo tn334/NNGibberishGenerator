@@ -23,6 +23,8 @@ class FrequencyTree:
             
             # move to next letter (node)
             currentNode = currentNode.children[char]
+        
+        # mark end of word
         currentNode.endOfWord = True
 
     def printTree(self, node=None, word=''):
