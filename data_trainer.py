@@ -5,7 +5,6 @@ class TreeNode:
         self.letter = ""
         self.frequencyCount = 0
         self.children = dict()
-        self.endOfWord = False
 
 class FrequencyTree:
     def __init__(self) -> None:
@@ -20,25 +19,26 @@ class FrequencyTree:
             # check if letter is not a child of current node
             if char not in currentNode.children:
                 currentNode.children[char] = TreeNode() # add child node
+                currentNode.children[char].letter = char # store letter in node
             
             # move to next letter (node)
             currentNode = currentNode.children[char]
+            currentNode.frequencyCount += 1
         
-        # mark end of word
-        currentNode.endOfWord = True
 
-    def printTree(self, node=None, word=''):
+    def printTree(self, node=None, prefix="", is_last_sibling=True):
         if node is None:
             node = self.root
+
+        else:  # Printing nodes other than the root
+            branch_symbol = "└── " if is_last_sibling else "├── "
+            print(f"{prefix}{branch_symbol}{node.letter} (count: {node.frequencyCount})")
+            prefix += "    " if is_last_sibling else "│   " # adjust output based on next nodes siblings
         
-        if node.endOfWord:
-            print(word)
-        
-        for char, childNode in node.children.items():
-            self.printTree(childNode, word + char)
-
-
-
+        children = list(node.children.values())
+        for currentIteration, child in enumerate(children):
+            # Pass the updated prefix and is_last flag based on whether the child is the last in its siblings
+            self.printTree(child, prefix, currentIteration == len(children) - 1)
 
 def main():
     # read all words in txt file
