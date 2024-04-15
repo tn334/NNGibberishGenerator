@@ -71,11 +71,11 @@ def main():
         word = word.strip()
         tree.insertWord(word)
 
-    # # print entire tree in terminal    
+    # print entire tree in terminal    
     # tree.printTree()
 
-    # # write entire tree to file
-    # writeTreeToFile(tree, 'frequency_tree_output.txt')
+    # write entire tree to file
+    writeTreeToFile(tree, 'frequency_tree_output_Python_Version.txt')
 
 
 
