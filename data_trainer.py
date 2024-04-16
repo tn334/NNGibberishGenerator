@@ -75,17 +75,10 @@ def main():
     # tree.printTree()
 
     # write entire tree to file
-    writeTreeToFile(tree, 'frequency_tree_output_Python_Version.txt')
-
-
-
+    # writeTreeToFile(tree, 'frequency_tree_output_Python_Version.txt')
 
 if __name__ == "__main__":
     main()
-
-
-
-
 
 
 ############################   OLD CODE THAT CAN BE USEFUL   ###################################   

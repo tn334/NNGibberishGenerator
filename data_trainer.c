@@ -10,7 +10,8 @@
 typedef struct TreeNode {
     char letter;
     int frequencyCount;
-    struct TreeNode** children;
+    struct TreeNode* children;
+    struct TreeNode* next;
 } TreeNode;
 
 typedef struct FrequencyTree {
@@ -23,7 +24,8 @@ FrequencyTree* createFrequencyTree();
 void insertWord(FrequencyTree* tree, char* word);
 void printTree(TreeNode* node, char* prefix, int is_last_sibling);
 void writeTreeToFile(TreeNode* node, FILE* file, char* prefix, int is_last_sibling);
-void freeFrequencyTree(TreeNode* node);
+void freeTreeNode(TreeNode* node);
+void freeFrequencyTree(FrequencyTree* tree);
 
 // main
 int main() {
@@ -49,17 +51,16 @@ int main() {
     // printTree(tree->root, "", 1);
 
     // Write entire tree to file
-    file = fopen("frequency_tree_output_C_Version.txt", "w");
-    if (file == NULL) {
-        printf("Error opening file.\n");
-        return 1;
-    }
-    writeTreeToFile(tree->root, file, "", 1);
-    fclose(file);
+    // file = fopen("frequency_tree_output_C_Version.txt", "w");
+    // if (file == NULL) {
+    //     printf("Error opening file.\n");
+    //     return 1;
+    // }
+    // writeTreeToFile(tree->root, file, "", 1);
+    // fclose(file);
 
-    // Free the FrequencyTree
-    freeFrequencyTree(tree->root);
-    free(tree);
+    // Free the entire tree and then the tree itself
+    freeFrequencyTree(tree);
 
     return 0;
 }
@@ -67,14 +68,11 @@ int main() {
 // function implementations
 TreeNode* createTreeNode(char letter)
 {
-    TreeNode* newNode = (TreeNode*) malloc(sizeof(TreeNode));
+    TreeNode* newNode = (TreeNode*)malloc(sizeof(TreeNode));
     newNode->letter = letter;
     newNode->frequencyCount = 0;
-    newNode->children = (TreeNode**)malloc(26 * sizeof(TreeNode*));
-    for (int index = 0; index < 26; index++)
-    {
-        newNode->children[index] = NULL;
-    }
+    newNode->children = NULL;
+    newNode->next = NULL;
     return newNode;
 }
 
@@ -87,51 +85,49 @@ FrequencyTree* createFrequencyTree()
 
 void insertWord(FrequencyTree* tree, char* word)
 {
-    int letter, charIndex;
+    int letter;
+    char charToInsert;
+    
     TreeNode* currentNode = tree->root;
-
-    for (letter = 0; word[letter] != NULL_CHAR; letter++)
-    {
-        charIndex = word[letter] - 'a';
-        if (currentNode->children[charIndex] == NULL)
-        {
-            currentNode->children[charIndex] = createTreeNode(word[letter]);
+    
+    for (letter = 0; word[letter] != NULL_CHAR; letter++) {
+        charToInsert = word[letter];
+        
+        TreeNode* childNode = currentNode->children;
+        
+        while (childNode != NULL) {
+            if (childNode->letter == charToInsert) {
+                childNode->frequencyCount++;
+                break;
+            }
+            childNode = childNode->next;
         }
-        currentNode = currentNode->children[charIndex];
-        currentNode->frequencyCount++;
+        
+        if (childNode == NULL) {
+            TreeNode* newChild = createTreeNode(charToInsert);
+            newChild->next = currentNode->children;
+            currentNode->children = newChild;
+        }
+        currentNode = currentNode->children;
     }
 }
 
 void printTree(TreeNode* node, char* prefix, int is_last_sibling) 
 {
-    // return if empty tree
     if (node == NULL) return;
 
-    // check for prefix not empty
-    if (strlen(prefix) > 0) 
-    {
-        printf("%s", prefix);
-        printf(is_last_sibling ? "└── " : "├── "); // same as if true do_this else do_that
-        printf("%c (count: %d)\n", node->letter, node->frequencyCount);
-    }
+    char branch_symbol[5];
+    strcpy(branch_symbol, is_last_sibling ? "L--- " : "T--- ");
+    printf("%s%s%c (count: %d)\n", prefix, branch_symbol, node->letter, node->frequencyCount);
 
-    // allocate memory for children prefixes
-    char* childPrefix = (char*)malloc(strlen(prefix) + 5);
-    strcpy(childPrefix, prefix);
-
-    // loop through children nodes
-    for (int i = 0; i < 26; i++) 
-    {
-        // check node is not empty
-        if (node->children[i] != NULL) 
-        {
-            strcat(childPrefix, is_last_sibling ? "    " : "│   "); // set spacing
-            // print child node
-            printTree(node->children[i], childPrefix, (node->children[i+1] == NULL) ? 1 : 0);
-            childPrefix[strlen(prefix)] = NULL_CHAR; // reset node
-        }
+    TreeNode* child = node->children;
+    while (child != NULL) {
+        char new_prefix[strlen(prefix) + 5];
+        strcpy(new_prefix, prefix);
+        strcat(new_prefix, is_last_sibling ? "    " : "|   ");
+        printTree(child, new_prefix, child->next == NULL);
+        child = child->next;
     }
-    free(childPrefix); // free child prefix
 }
 
 void writeTreeToFile(TreeNode* node, FILE* file, char* prefix, int is_last_sibling) 
@@ -139,40 +135,49 @@ void writeTreeToFile(TreeNode* node, FILE* file, char* prefix, int is_last_sibli
     // return if empty tree
     if (node == NULL) return;
 
-    // check for prefix not empty
-    if (strlen(prefix) > 0) 
-    {
-        fprintf(file, "%s", prefix);
-        fprintf(file, is_last_sibling ? "└── " : "├── "); // same as if true do_this else do_that
-        fprintf(file, "%c (count: %d)\n", node->letter, node->frequencyCount);
-    }
+    // Write the node to the file regardless of the prefix
+    fprintf(file, "%s%s%c (count: %d)\n", prefix, is_last_sibling ? "L--- " : "T--- ", node->letter, node->frequencyCount);
 
     // allocate memory for children prefixes
     char* childPrefix = (char*)malloc(strlen(prefix) + 5);
     strcpy(childPrefix, prefix);
+    strcat(childPrefix, is_last_sibling ? "    " : "|   "); // set spacing
 
     // loop through children nodes
-    for (int i = 0; i < 26; i++) 
+    TreeNode* child = node->children;
+    while (child != NULL) 
     {
-        // check node is not empty
-        if (node->children[i] != NULL) 
-        {
-            strcat(childPrefix, is_last_sibling ? "    " : "│   "); // set spacing
-            // write child node
-            writeTreeToFile(node->children[i], file, childPrefix, (node->children[i+1] == NULL) ? 1 : 0);
-            childPrefix[strlen(prefix)] = NULL_CHAR; // reset node
-        }
+        // write child node
+        writeTreeToFile(child, file, childPrefix, child->next == NULL);
+        child = child->next;
     }
     free(childPrefix); // free child prefix
 }
 
-void freeFrequencyTree(TreeNode* node) 
-{
+
+void freeTreeNode(TreeNode* node) {
     if (node == NULL) return;
-    for (int i = 0; i < 26; i++) 
-    {
-        freeFrequencyTree(node->children[i]);
+
+    // Recursively free all children of the current node
+    TreeNode* child = node->children;
+    while (child != NULL) {
+        TreeNode* nextChild = child->next; // Save the next child before freeing
+        freeTreeNode(child);
+        child = nextChild;
     }
-    free(node->children);
+
+    // Free the current node
     free(node);
 }
+
+void freeFrequencyTree(FrequencyTree* tree) {
+    if (tree == NULL) return;
+
+    // Free the entire tree
+    freeTreeNode(tree->root);
+
+    // Free the tree itself
+    free(tree);
+}
+
+
