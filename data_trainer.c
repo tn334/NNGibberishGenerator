@@ -18,6 +18,13 @@ typedef struct FrequencyTree {
     TreeNode* root;
 } FrequencyTree;
 
+typedef struct FlatNode {
+    char letter;
+    int depth;
+    int count;
+    char parent;
+} FlatNode;
+
 // function definitions
 TreeNode* createTreeNode(char letter);
 FrequencyTree* createFrequencyTree();
@@ -154,7 +161,6 @@ void writeTreeToFile(TreeNode* node, FILE* file, char* prefix, int is_last_sibli
     free(childPrefix); // free child prefix
 }
 
-
 void freeTreeNode(TreeNode* node) {
     if (node == NULL) return;
 
@@ -180,4 +186,23 @@ void freeFrequencyTree(FrequencyTree* tree) {
     free(tree);
 }
 
+void flattenTree(TreeNode* root, FlatNode* output_list)
+{
+    // set flag variable subtreeEND = FALSE
+    // set variable for iteration counter = 0
 
+    // enter while loop to iterate over root node of data structure
+    // loop over its children until rootNode->currentChild == NULL && subtreeEND == true
+
+        // enter while loop to iterate to nodes at depth == iteration
+        // (iteration 0 gets all nodes of depth 0, iteration 1 gets all nodes of depth 1, etc)
+
+        // enter while loop to iterate over the children node at this depth
+        // read contents of node, write them into a struct
+
+            // What to write: label, depth, count, parent (NULLCHAR if depth = 0)
+        
+        // add struct into 1d array at index
+    
+        // increment index
+}
