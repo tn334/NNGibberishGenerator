@@ -34,11 +34,13 @@ void printTree(TreeNode* node, char* prefix, int is_last_sibling);
 void writeTreeToFile(TreeNode* node, FILE* file, char* prefix, int is_last_sibling);
 void freeTreeNode(TreeNode* node);
 void freeFrequencyTree(FrequencyTree* tree);
+void flattenTree(TreeNode* node, FlatNode* output_list, int *index);
+int countNodes(TreeNode* node);
 
 // main
 int main() {
     // open file with 370k words
-    FILE* file = fopen("words_alpha.txt", "r");
+    FILE* file = fopen("../Training Files/words_alpha.txt", "r");
     if (file == NULL) {
         printf("Error opening file.\n");
         return 1;
@@ -54,9 +56,25 @@ int main() {
     }
     fclose(file);
 
+    // int index = 0;
+    // int totalNodes = countNodes(tree->root); // get total nodes in tree
+
+    // malloc flat list
+    // FlatNode* flatList = (FlatNode*)malloc(totalNodes * sizeof(FlatNode)); 
+
+    // flatten the tree
+    // flattenTree(tree->root, flatList, &index);
+
+    // display flat list contents
+    // for(int i = 0; i < index; i++)
+    // {
+    //     printf("Letter: %c, Depth: %d, Count: %d, Parent: %c\n",
+    //            flatList[i].letter, flatList[i].depth, flatList[i].count, flatList[i].parent);
+    // }
+
     // Print entire tree in terminal
-    // printf("Frequency Tree:\n");
-    // printTree(tree->root, "", 1);
+    printf("Frequency Tree:\n");
+    printTree(tree->root, "", 1);
 
     // Write entire tree to file
     // file = fopen("frequency_tree_output_C_Version.txt", "w");
@@ -129,11 +147,14 @@ void printTree(TreeNode* node, char* prefix, int is_last_sibling)
     printf("%s%s%c (count: %d)\n", prefix, branch_symbol, node->letter, node->frequencyCount);
 
     TreeNode* child = node->children;
-    while (child != NULL) {
-        char new_prefix[strlen(prefix) + 5];
+    while (child != NULL) 
+    {
+        int new_prefix_len = strlen(prefix) + 5;
+        char* new_prefix = (char*)malloc(new_prefix_len * sizeof(char));
         strcpy(new_prefix, prefix);
         strcat(new_prefix, is_last_sibling ? "    " : "|   ");
         printTree(child, new_prefix, child->next == NULL);
+        free(new_prefix);
         child = child->next;
     }
 }
@@ -187,20 +208,54 @@ void freeFrequencyTree(FrequencyTree* tree) {
     free(tree);
 }
 
-void flattenTree(TreeNode* node, FlatNode* output_list)
+int countNodes(TreeNode* node) 
 {
+    int totalNodeCount = 1;
+    TreeNode* child = node->children;
+    if (node == NULL) return 0;
+
+    while (child != NULL) 
+    {
+        totalNodeCount += countNodes(child);
+        child = child->next;
+    }
+
+    return totalNodeCount;
+}
+
+void flattenTree(TreeNode* node, FlatNode* output_list, int *index)
+{
+    if (node == NULL) return;  
+
+    TreeNode* child = node->children;
+    int childDepth = 1;
+
+    // append current node to output list
+    output_list[*index].letter = node->letter;
+    output_list[*index].depth = 0;
+    output_list[*index].count = node->frequencyCount;
+    output_list[*index].parent = 'N'; // N = no parent for root node
+    (*index)++;
+
+    // traverse children node recursively
+    while(child != NULL)
+    {
+        flattenTree(child, output_list, index);
+        child = child->next;
+        childDepth++;
+    }
+}
+
+// void flattenTree(TreeNode* node, FlatNode* output_list)
+// {
     // set flag variable subtreeEND = FALSE
-    bool subtreeEndFlag = true;
     // set variable for iteration counter = 0
-    int currentDepth = 0;
 
     // enter while loop to iterate over root node of data structure
     // loop over its children until rootNode->currentChild == NULL && subtreeEND == true
-    while (node->children != NULL && !subtreeEndFlag)
-    {
+
         // enter while loop to iterate to nodes at depth == iteration
         // (iteration 0 gets all nodes of depth 0, iteration 1 gets all nodes of depth 1, etc)
-        while()
 
         // enter while loop to iterate over the children node at this depth
         // read contents of node, write them into a struct
@@ -210,6 +265,5 @@ void flattenTree(TreeNode* node, FlatNode* output_list)
         // add struct into 1d array at index
     
         // increment index
-    }
 
-}
+// }
