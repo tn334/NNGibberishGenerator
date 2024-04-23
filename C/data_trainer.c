@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 // global variables
 #define NULL_CHAR '\0'
@@ -186,14 +187,17 @@ void freeFrequencyTree(FrequencyTree* tree) {
     free(tree);
 }
 
-void flattenTree(TreeNode* root, FlatNode* output_list)
+void flattenTree(TreeNode* node, FlatNode* output_list)
 {
     // set flag variable subtreeEND = FALSE
+    bool subtreeEndFlag = true;
     // set variable for iteration counter = 0
+    int currentDepth = 0;
 
     // enter while loop to iterate over root node of data structure
     // loop over its children until rootNode->currentChild == NULL && subtreeEND == true
-
+    while (node->children != NULL && !subtreeEndFlag)
+    {
         // enter while loop to iterate to nodes at depth == iteration
         // (iteration 0 gets all nodes of depth 0, iteration 1 gets all nodes of depth 1, etc)
 
@@ -205,4 +209,6 @@ void flattenTree(TreeNode* root, FlatNode* output_list)
         // add struct into 1d array at index
     
         // increment index
+    }
+
 }
