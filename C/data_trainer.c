@@ -200,6 +200,7 @@ void flattenTree(TreeNode* node, FlatNode* output_list)
     {
         // enter while loop to iterate to nodes at depth == iteration
         // (iteration 0 gets all nodes of depth 0, iteration 1 gets all nodes of depth 1, etc)
+        while()
 
         // enter while loop to iterate over the children node at this depth
         // read contents of node, write them into a struct
