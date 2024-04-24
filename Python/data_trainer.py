@@ -40,6 +40,25 @@ class FrequencyTree:
             # Pass the updated prefix and is_last flag based on whether the child is the last in its siblings
             self.printTree(child, prefix, currentIteration == len(children) - 1)
 
+class FlatNode():
+    def __init__(self, label, depth, count, parent):
+        self.label = label
+        self.depth = depth
+        self.count = count
+        self.parent = parent
+
+def flattenTree(root_node, output_list):
+    def dfs(node, depth, parent):
+        if not node.children:
+            return
+
+        for child in node.children.values():
+            output_list.append(FlatNode(child.letter, depth, child.frequencyCount, parent))
+            dfs(child, depth + 1, child.letter)
+    
+    dfs(root_node, 0, None)
+    return output_list
+
 
 def writeTreeToFile(tree, filename):
     # Open the file in write mode with UTF-8 encoding
@@ -62,7 +81,7 @@ def writeTreeToFile(tree, filename):
 
 def main():
     # read all words in txt file
-    with open('words_alpha.txt', 'r') as file:
+    with open('../Training Files/words_alpha.txt', 'r') as file:
         words = file.readlines()
 
     tree = FrequencyTree()
@@ -70,6 +89,12 @@ def main():
     for word in words:
         word = word.strip()
         tree.insertWord(word)
+
+    outputList = []
+    flattenTree(tree.root, outputList)
+
+    for flat_node in outputList:
+        print(f"Label: {flat_node.label}, Depth: {flat_node.depth}, Count: {flat_node.count}, Parent: {flat_node.parent}")
 
     # print entire tree in terminal    
     # tree.printTree()
