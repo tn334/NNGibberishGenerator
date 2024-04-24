@@ -1,4 +1,4 @@
-
+from collections import deque
 # classes to handle creation of frequency tree
 class TreeNode:
     def __init__(self) -> None:
@@ -47,16 +47,40 @@ class FlatNode():
         self.count = count
         self.parent = parent
 
-def flattenTree(root_node, output_list):
-    def dfs(node, depth, parent):
-        if not node.children:
-            return
+# def flattenTree(root_node, output_list):
+#     def dfs(node, depth, parent):
+#         if not node.children:
+#             return
 
-        for child in node.children.values():
-            output_list.append(FlatNode(child.letter, depth, child.frequencyCount, parent))
-            dfs(child, depth + 1, child.letter)
+#         for child in node.children.values():
+#             output_list.append(FlatNode(child.letter, depth, child.frequencyCount, parent))
+#             dfs(child, depth + 1, child.letter)
     
-    dfs(root_node, 0, None)
+#     dfs(root_node, 0, None)
+#     return output_list
+
+def flattenTree(root_node, output_list, traversal_method='dfs'):
+    if traversal_method == 'dfs':
+        def dfs(node, depth, parent):
+            if not node.children:
+                return
+
+            for child in node.children.values():
+                output_list.append(FlatNode(child.letter, depth, child.frequencyCount, parent))
+                dfs(child, depth + 1, child.letter)
+        dfs(root_node, 0, None)
+
+    elif traversal_method == 'bfs':
+        queue = deque([(root_node, 0, None)])
+        while queue:
+            node, depth, parent = queue.popleft()
+            output_list.append(FlatNode(node.letter, depth, node.frequencyCount, parent))
+            for child in node.children.values():
+                queue.append((child, depth + 1, node.letter))
+                
+    else:
+        raise ValueError("Invalid traversal method. Use 'dfs' or 'bfs'.")
+
     return output_list
 
 
@@ -90,11 +114,19 @@ def main():
         word = word.strip()
         tree.insertWord(word)
 
-    outputList = []
-    flattenTree(tree.root, outputList)
+    output_list_dfs = flattenTree(tree.root, [], 'dfs')
+    output_list_bfs = flattenTree(tree.root, [], 'bfs')
 
-    for flat_node in outputList:
+    # print flattened tree using dfs
+    # print("DFS Output list")
+    # for flat_node in output_list_dfs:
+    #     print(f"Label: {flat_node.label}, Depth: {flat_node.depth}, Count: {flat_node.count}, Parent: {flat_node.parent}")
+
+    # print flattened tree using bfs
+    print("BFS Output list")
+    for flat_node in output_list_bfs:
         print(f"Label: {flat_node.label}, Depth: {flat_node.depth}, Count: {flat_node.count}, Parent: {flat_node.parent}")
+
 
     # print entire tree in terminal    
     # tree.printTree()
