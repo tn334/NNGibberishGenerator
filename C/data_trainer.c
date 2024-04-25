@@ -23,7 +23,7 @@ typedef struct FlatNode {
     char letter;
     int depth;
     int count;
-    char parent;
+    char parent;   
 } FlatNode;
 
 // function definitions
@@ -34,8 +34,11 @@ void printTree(TreeNode* node, char* prefix, int is_last_sibling);
 void writeTreeToFile(TreeNode* node, FILE* file, char* prefix, int is_last_sibling);
 void freeTreeNode(TreeNode* node);
 void freeFrequencyTree(FrequencyTree* tree);
-void flattenTree(TreeNode* node, FlatNode* output_list, int *index);
+FlatNode* flattenTree(FrequencyTree* tree, char traversal_method);
 int countNodes(TreeNode* node);
+void dfs(TreeNode* node, int depth, char parent, FlatNode* output_list, int* index);
+void bfs(TreeNode* rootNode, FlatNode* output_list);
+
 
 // main
 int main() {
@@ -56,21 +59,16 @@ int main() {
     }
     fclose(file);
 
-    int index = 0;
-    int totalNodes = countNodes(tree->root); // get total nodes in tree
-
-    // malloc flat list
-    FlatNode* flatList = (FlatNode*)malloc(totalNodes * sizeof(FlatNode)); 
-
     // flatten the tree
-    flattenTree(tree->root, flatList, &index);
+    FlatNode* flatList = flattenTree(tree, 'd');
 
-    // display flat list contents
-    for(int i = 0; i < index; i++)
+    // print flat list
+    int totalNodes = countNodes(tree->root);
+    for (int index = 0; index < totalNodes; index++)
     {
         printf("Letter: %c, Depth: %d, Count: %d, Parent: %c\n",
-               flatList[i].letter, flatList[i].depth, flatList[i].count, flatList[i].parent);
-    }
+            flatList[index].letter, flatList[index].depth, flatList[index].count, flatList[index].parent);
+    } 
 
     // Print entire tree in terminal
     // printf("Frequency Tree:\n");
@@ -86,6 +84,7 @@ int main() {
     // fclose(file);
 
     // Free the entire tree and then the tree itself
+    free(flatList);
     freeFrequencyTree(tree);
 
     return 0;
@@ -116,13 +115,16 @@ void insertWord(FrequencyTree* tree, char* word)
     
     TreeNode* currentNode = tree->root;
     
-    for (letter = 0; word[letter] != NULL_CHAR; letter++) {
+    for (letter = 0; word[letter] != NULL_CHAR; letter++) 
+    {
         charToInsert = word[letter];
         
         TreeNode* childNode = currentNode->children;
-        
-        while (childNode != NULL) {
-            if (childNode->letter == charToInsert) {
+
+        while (childNode != NULL) 
+        {
+            if (childNode->letter == charToInsert) 
+            {
                 childNode->frequencyCount++;
                 break;
             }
@@ -223,27 +225,63 @@ int countNodes(TreeNode* node)
     return totalNodeCount;
 }
 
-void flattenTree(TreeNode* node, FlatNode* output_list, int *index)
+void dfs(TreeNode* node, int depth, char parent, FlatNode* output_list, int* index)
 {
-    if (node == NULL) return;  
+    if (node == NULL) return;
 
-    TreeNode* child = node->children;
-    int childDepth = 1;
-
-    // append current node to output list
     output_list[*index].letter = node->letter;
-    output_list[*index].depth = 0;
+    output_list[*index].depth = depth;
     output_list[*index].count = node->frequencyCount;
-    output_list[*index].parent = 'N'; // N = no parent for root node
+    output_list[*index].parent = parent;
     (*index)++;
 
-    // traverse children node recursively
-    while(child != NULL)
-    {
-        flattenTree(child, output_list, index);
+    TreeNode* child = node->children;
+    while (child != NULL) {
+        dfs(child, depth + 1, node->letter, output_list, index);
         child = child->next;
-        childDepth++;
     }
+}
+
+void bfs(TreeNode* rootNode, FlatNode* output_list)
+{
+
+}
+
+FlatNode* flattenTree(FrequencyTree* tree, char traversal_method)
+{
+    int index = 0, depth = 0;
+    TreeNode* rootNode = tree->root;
+    int totalNodes = countNodes(tree->root); // get total nodes in tree
+    
+    // malloc flat list
+    FlatNode* flatList = (FlatNode*)malloc(totalNodes * sizeof(FlatNode));
+
+    if (flatList == NULL)
+    {
+        printf("Memory allocation failed.");
+        exit(EXIT_FAILURE);
+    }
+
+    // flatten tree with dfs
+    if (traversal_method == 'd')
+    {
+        dfs(rootNode, depth, NULL_CHAR, flatList, &index);
+    }
+
+    // flatten tree with bfs
+    else if (traversal_method == 'b')
+    {
+        bfs(rootNode, flatList);
+    }
+
+    // illegal traversal method
+    else
+    {
+        fprintf(stderr, "Invalid traversal method. Use 'dfs' or 'bfs'.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return flatList;
 }
 
 // void flattenTree(TreeNode* node, FlatNode* output_list)
