@@ -47,18 +47,6 @@ class FlatNode():
         self.count = count
         self.parent = parent
 
-# def flattenTree(root_node, output_list):
-#     def dfs(node, depth, parent):
-#         if not node.children:
-#             return
-
-#         for child in node.children.values():
-#             output_list.append(FlatNode(child.letter, depth, child.frequencyCount, parent))
-#             dfs(child, depth + 1, child.letter)
-    
-#     dfs(root_node, 0, None)
-#     return output_list
-
 def flattenTree(root_node, output_list, traversal_method='dfs'):
     if traversal_method == 'dfs':
         def dfs(node, depth, parent):
@@ -137,25 +125,6 @@ def main():
 if __name__ == "__main__":
     main()
 
-
-############################   OLD CODE THAT CAN BE USEFUL   ###################################   
-#frequencyDict = { letter: {} for letter in 'abcdefghijklmnopqrstuvwxyz'}
-
-# # loop through words
-# for word in words:
-#     word = word.strip()
-
-#     # compare position to letter and count positions
-#     for position, letter in enumerate(word):
-#         if position not in frequencyDict[letter]:
-#             frequencyDict[letter][position] = 1
-#         else:
-#             frequencyDict[letter][position] += 1
-
-# # write freq dict contents to file
-# with open('letter_frequency.txt', 'w') as file:
-#     for letter, positions in frequencyDict.items():
-#         file.write(f"{letter}: {positions}\n\n")
 
 
 

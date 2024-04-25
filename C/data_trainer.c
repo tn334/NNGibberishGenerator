@@ -28,23 +28,24 @@ typedef struct FlatNode {
 
 // function definitions
 TreeNode* createTreeNode(char letter);
+FlatNode* flattenTree(FrequencyTree* tree, char traversal_method);
 FrequencyTree* createFrequencyTree();
+int countNodes(TreeNode* node);
 void insertWord(FrequencyTree* tree, char* word);
 void printTree(TreeNode* node, char* prefix, int is_last_sibling);
 void writeTreeToFile(TreeNode* node, FILE* file, char* prefix, int is_last_sibling);
 void freeTreeNode(TreeNode* node);
 void freeFrequencyTree(FrequencyTree* tree);
-FlatNode* flattenTree(FrequencyTree* tree, char traversal_method);
-int countNodes(TreeNode* node);
 void dfs(TreeNode* node, int depth, char parent, FlatNode* output_list, int* index);
 void bfs(TreeNode* rootNode, FlatNode* output_list);
 
-
 // main
-int main() {
+int main() 
+{
     // open file with 370k words
     FILE* file = fopen("../Training Files/words_alpha.txt", "r");
-    if (file == NULL) {
+    if (file == NULL) 
+    {
         printf("Error opening file.\n");
         return 1;
     }
@@ -54,21 +55,14 @@ int main() {
 
     // read words from file
     char word[100];
-    while (fscanf(file, "%s", word) != EOF) {
+    while (fscanf(file, "%s", word) != EOF) 
+    {
         insertWord(tree, word);
     }
     fclose(file);
 
     // flatten the tree
     FlatNode* flatList = flattenTree(tree, 'd');
-
-    // print flat list
-    int totalNodes = countNodes(tree->root);
-    for (int index = 0; index < totalNodes; index++)
-    {
-        printf("Letter: %c, Depth: %d, Count: %d, Parent: %c\n",
-            flatList[index].letter, flatList[index].depth, flatList[index].count, flatList[index].parent);
-    } 
 
     // Print entire tree in terminal
     // printf("Frequency Tree:\n");
@@ -83,6 +77,24 @@ int main() {
     // writeTreeToFile(tree->root, file, "", 1);
     // fclose(file);
 
+    // write flattened tree to file
+    int totalNodes = countNodes(tree->root);
+    file = fopen("../Output/flattenedTree.txt", "w");
+    if (file == NULL)
+    {
+        printf("Error opening file.\n");
+        return 1;
+    }
+
+    for (int index = 0; index < totalNodes; index++)
+    {
+        if (flatList[index].parent != NULL_CHAR || flatList[index].letter != NULL_CHAR)
+        {
+            fprintf(file, "%c, %d, %d, %c\n",
+                flatList[index].letter, flatList[index].depth, flatList[index].count, flatList[index].parent);
+        }
+    } 
+    
     // Free the entire tree and then the tree itself
     free(flatList);
     freeFrequencyTree(tree);
@@ -185,12 +197,14 @@ void writeTreeToFile(TreeNode* node, FILE* file, char* prefix, int is_last_sibli
     free(childPrefix); // free child prefix
 }
 
-void freeTreeNode(TreeNode* node) {
+void freeTreeNode(TreeNode* node) 
+{
     if (node == NULL) return;
 
     // Recursively free all children of the current node
     TreeNode* child = node->children;
-    while (child != NULL) {
+    while (child != NULL) 
+    {
         TreeNode* nextChild = child->next; // Save the next child before freeing
         freeTreeNode(child);
         child = nextChild;
@@ -200,7 +214,8 @@ void freeTreeNode(TreeNode* node) {
     free(node);
 }
 
-void freeFrequencyTree(FrequencyTree* tree) {
+void freeFrequencyTree(FrequencyTree* tree) 
+{
     if (tree == NULL) return;
 
     // Free the entire tree
@@ -227,29 +242,61 @@ int countNodes(TreeNode* node)
 
 void dfs(TreeNode* node, int depth, char parent, FlatNode* output_list, int* index)
 {
-    if (node == NULL) return;
+    if (node == NULL) return; // check empty tree
 
+    // add node to output list
     output_list[*index].letter = node->letter;
     output_list[*index].depth = depth;
     output_list[*index].count = node->frequencyCount;
     output_list[*index].parent = parent;
     (*index)++;
 
+    // loop through tree nodes
     TreeNode* child = node->children;
-    while (child != NULL) {
+    while (child != NULL) 
+    {
         dfs(child, depth + 1, node->letter, output_list, index);
-        child = child->next;
+        child = child->next;    
     }
 }
 
+// TODO: missing logic
 void bfs(TreeNode* rootNode, FlatNode* output_list)
 {
+    if (rootNode == NULL) return;
 
+    int front = 0, rear = 0, depth = 0, queueSize;
+    int totalNodes = countNodes(rootNode);
+
+    TreeNode* queue[totalNodes];
+    queue[rear++] = rootNode;
+
+    while(front != rear)
+    {
+        queueSize = rear - front;
+
+        for (int i = 0; i < queueSize; i++)
+        {
+            TreeNode* currentNode = queue[front++];
+            output_list[i].letter = currentNode->letter;
+            output_list[i].depth = depth;
+            output_list[i].count = currentNode->frequencyCount;
+            // output_list[i].parent = ;
+
+            TreeNode* child = currentNode->children;
+            while(child != NULL)
+            {
+                queue[rear++] = child;
+                child = child->next;
+            }
+        }
+        depth++;
+    }
 }
 
 FlatNode* flattenTree(FrequencyTree* tree, char traversal_method)
 {
-    int index = 0, depth = 0;
+    int index, depth = -1;
     TreeNode* rootNode = tree->root;
     int totalNodes = countNodes(tree->root); // get total nodes in tree
     
@@ -265,12 +312,14 @@ FlatNode* flattenTree(FrequencyTree* tree, char traversal_method)
     // flatten tree with dfs
     if (traversal_method == 'd')
     {
+        index = 0;
         dfs(rootNode, depth, NULL_CHAR, flatList, &index);
     }
 
     // flatten tree with bfs
     else if (traversal_method == 'b')
     {
+        index = 0;
         bfs(rootNode, flatList);
     }
 
@@ -283,25 +332,3 @@ FlatNode* flattenTree(FrequencyTree* tree, char traversal_method)
 
     return flatList;
 }
-
-// void flattenTree(TreeNode* node, FlatNode* output_list)
-// {
-    // set flag variable subtreeEND = FALSE
-    // set variable for iteration counter = 0
-
-    // enter while loop to iterate over root node of data structure
-    // loop over its children until rootNode->currentChild == NULL && subtreeEND == true
-
-        // enter while loop to iterate to nodes at depth == iteration
-        // (iteration 0 gets all nodes of depth 0, iteration 1 gets all nodes of depth 1, etc)
-
-        // enter while loop to iterate over the children node at this depth
-        // read contents of node, write them into a struct
-
-            // What to write: label, depth, count, parent (NULLCHAR if depth = 0)
-        
-        // add struct into 1d array at index
-    
-        // increment index
-
-// }
