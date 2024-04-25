@@ -56,25 +56,25 @@ int main() {
     }
     fclose(file);
 
-    // int index = 0;
-    // int totalNodes = countNodes(tree->root); // get total nodes in tree
+    int index = 0;
+    int totalNodes = countNodes(tree->root); // get total nodes in tree
 
     // malloc flat list
-    // FlatNode* flatList = (FlatNode*)malloc(totalNodes * sizeof(FlatNode)); 
+    FlatNode* flatList = (FlatNode*)malloc(totalNodes * sizeof(FlatNode)); 
 
     // flatten the tree
-    // flattenTree(tree->root, flatList, &index);
+    flattenTree(tree->root, flatList, &index);
 
     // display flat list contents
-    // for(int i = 0; i < index; i++)
-    // {
-    //     printf("Letter: %c, Depth: %d, Count: %d, Parent: %c\n",
-    //            flatList[i].letter, flatList[i].depth, flatList[i].count, flatList[i].parent);
-    // }
+    for(int i = 0; i < index; i++)
+    {
+        printf("Letter: %c, Depth: %d, Count: %d, Parent: %c\n",
+               flatList[i].letter, flatList[i].depth, flatList[i].count, flatList[i].parent);
+    }
 
     // Print entire tree in terminal
-    printf("Frequency Tree:\n");
-    printTree(tree->root, "", 1);
+    // printf("Frequency Tree:\n");
+    // printTree(tree->root, "", 1);
 
     // Write entire tree to file
     // file = fopen("frequency_tree_output_C_Version.txt", "w");
@@ -96,7 +96,7 @@ TreeNode* createTreeNode(char letter)
 {
     TreeNode* newNode = (TreeNode*)malloc(sizeof(TreeNode));
     newNode->letter = letter;
-    newNode->frequencyCount = 0;
+    newNode->frequencyCount = 1;
     newNode->children = NULL;
     newNode->next = NULL;
     return newNode;
