@@ -40,6 +40,33 @@ class FrequencyTree:
             # Pass the updated prefix and is_last flag based on whether the child is the last in its siblings
             self.printTree(child, prefix, currentIteration == len(children) - 1)
 
+def traverse_tree(node, current_list, result_list): 
+  # Check if the node is an end node
+  if len(node.children) == 0:
+    # Append the list to the result list
+    result_list.append(current_list + [node.letter, node.frequencyCount])
+    return
+
+  # Iterate through the children of the node
+  for child in node.children.values():
+
+    # Append the current node's letter and frequency to the current list
+    if(node.letter == ''):
+      # Recursively traverse the child node
+      traverse_tree(child, current_list, result_list)
+
+    else:  
+      current_list.append(node.letter)
+      current_list.append(node.frequencyCount)
+      current_list.append(',')
+
+      # Recursively traverse the child node
+      traverse_tree(child, current_list, result_list)
+
+      # Remove the current node's letter and frequency from the current list
+      for i in range(3):
+        current_list.pop()
+          
 class FlatNode():
     def __init__(self, label, depth, count, parent):
         self.label = label
@@ -102,8 +129,8 @@ def main():
         word = word.strip()
         tree.insertWord(word)
 
-    output_list_dfs = flattenTree(tree.root, [], 'dfs')
-    output_list_bfs = flattenTree(tree.root, [], 'bfs')
+    # output_list_dfs = flattenTree(tree.root, [], 'dfs')
+    # output_list_bfs = flattenTree(tree.root, [], 'bfs')
 
     # print flattened tree using dfs
     # print("DFS Output list")
@@ -111,16 +138,32 @@ def main():
     #     print(f"Label: {flat_node.label}, Depth: {flat_node.depth}, Count: {flat_node.count}, Parent: {flat_node.parent}")
 
     # print flattened tree using bfs
-    print("BFS Output list")
-    for flat_node in output_list_bfs:
-        print(f"Label: {flat_node.label}, Depth: {flat_node.depth}, Count: {flat_node.count}, Parent: {flat_node.parent}")
-
+    # print("BFS Output list")
+    # for flat_node in output_list_bfs:
+        # print(f"Label: {flat_node.label}, Depth: {flat_node.depth}, Count: {flat_node.count}, Parent: {flat_node.parent}")
 
     # print entire tree in terminal    
     # tree.printTree()
 
     # write entire tree to file
     # writeTreeToFile(tree, 'frequency_tree_output_Python_Version.txt')
+
+    # Create an empty list to store the result
+    result_list = []
+
+    # Traverse the frequency tree
+    traverse_tree(tree.root, [], result_list)
+
+    # Print the result list
+    # print(result_list)
+
+    #write entire result_list to file
+    with open("result_list.txt", "w") as output_file:
+      for item in result_list:
+        for value in item:
+          output_file.write(str(value))
+
+        output_file.write("\n")
 
 if __name__ == "__main__":
     main()
