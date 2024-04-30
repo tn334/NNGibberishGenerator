@@ -157,6 +157,18 @@ def main():
     # Print the result list
     # print(result_list)
 
+    # create 5 letter dictionary
+    # with open("../Training Files/words_alpha.txt", "r") as input_file:
+    #     lines = input_file.readlines()
+
+    # with open("../Output/5_letter_dict.txt", "w") as file_out:
+    #     for line in lines:
+    #         words = line.split()
+
+    #         for word in words:
+    #             if len(word) <= 5:
+    #                 file_out.write(word + "\n")
+
     #write entire result_list to file
     with open("result_list.txt", "w") as output_file:
       for item in result_list:
