@@ -35,8 +35,11 @@ def write_numerical_output(file_path, binary_output):
     with open(file_path, 'w') as file:
         for i, row in enumerate(numerical_output):
             file.write(''.join(map(str, row)))
-            if (i + 1) % 5 == 0:
-              file.write('\n')
+            counter += 1
+            if counter % 5 == 0:
+                file.write('\n')
+            else:
+                file.write(',')
 
 if __name__ == "__main__":
     input_file = "/content/sample_data/5_letter_dict.txt"  # Replace with your input file name
