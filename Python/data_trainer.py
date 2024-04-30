@@ -180,7 +180,7 @@ def main():
     traverse_tree(tree.root, [], length, result_list)
 
     # Print the result list
-    print(result_list)
+    #print(result_list)
 
     # create 5 letter dictionary
     # with open("../Training Files/words_alpha.txt", "r") as input_file:
