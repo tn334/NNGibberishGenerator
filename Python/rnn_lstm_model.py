@@ -54,18 +54,20 @@ num_epochs = 10
 log_interval = 100
 
 # Prepare your data and create DataLoader
-# dataset = WordDataset(data)
-# train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+data = open("../Output/5_letter_dict.txt", "r").readlines()
+dataset = WordDataset(data)
+train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 # Define your model, loss function, and optimizer
-# model = LSTMModel(input_size, hidden_size, output_size)
-# criterion = nn.CrossEntropyLoss()
-# optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+model = LSTMModel(input_size, hidden_size, output_size)
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 # Train your model
-# train(model, train_loader, criterion, optimizer, num_epochs)
+train(model, train_loader, criterion, optimizer, num_epochs)
 
 # Once trained, use the model to generate new words
 # Example: seed_input = torch.tensor([your_seed_input], dtype=torch.float32)
-# output = model(seed_input)
+seed_input = torch.zeros(1, input_size)
+output = model(seed_input)
 # Use the output to generate new words
