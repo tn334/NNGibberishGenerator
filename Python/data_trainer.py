@@ -40,33 +40,57 @@ class FrequencyTree:
             # Pass the updated prefix and is_last flag based on whether the child is the last in its siblings
             self.printTree(child, prefix, currentIteration == len(children) - 1)
 
-def traverse_tree(node, current_list, result_list): 
+def writeTraversalToFile(result_list):
+    #write entire result_list to file
+    with open("/../Output/5_letter_frequency_list_padded.txt", "w") as output_file:
+      for item in result_list:
+            combined_values = []
+            for i in range(0, len(item), 2):
+                combined_values.append(str(item[i]) + str(item[i + 1]))
+            output_file.write(",".join(combined_values) + "\n")
+
+def traverse_tree(node, result_list, length, current_list = None):
+
+  # set local copy of current_list
+  if current_list is None:
+      current_list = []
+  
+  # Append current node's letter and freequency to the current list
+  current_list.append(node.letter)
+  current_list.append(node.frequencyCount)
+
   # Check if the node is an end node
   if len(node.children) == 0:
+    word_list = []
+    word_list = current_list[2:]
+    
+    while length < 5:
+      word_list.append('_')
+      word_list.append(1)
+      length+=1
+
     # Append the list to the result list
-    result_list.append(current_list + [node.letter, node.frequencyCount])
+    result_list.append(word_list)
+
     return
 
+  length+=1
   # Iterate through the children of the node
-  for child in node.children.values():
-
-    # Append the current node's letter and frequency to the current list
-    if(node.letter == ''):
+  for child_node in node.children.values():
+      
       # Recursively traverse the child node
-      traverse_tree(child, current_list, result_list)
-
-    else:  
-      current_list.append(node.letter)
-      current_list.append(node.frequencyCount)
-      current_list.append(',')
-
-      # Recursively traverse the child node
-      traverse_tree(child, current_list, result_list)
-
+      traverse_tree(child_node, result_list, length, current_list)
+      
       # Remove the current node's letter and frequency from the current list
-      for i in range(3):
+      for i in range(2):
         current_list.pop()
-          
+
+def writeTraversalToFileCommaSep(result_list):
+    #write entire result_list to file
+    with open("/../Output/5_letter_frequency_list_padded_comma_sep.txt", "w") as output_file:
+      for item in result_list:
+        output_file.write(','.join(map(str, item))+"\n")
+
 class FlatNode():
     def __init__(self, label, depth, count, parent):
         self.label = label
@@ -120,7 +144,7 @@ def writeTreeToFile(tree, filename):
 
 def main():
     # read all words in txt file
-    with open('../Training Files/words_alpha.txt', 'r') as file:
+    with open('../Output/5_letter_dict.txt', 'r') as file:
         words = file.readlines()
 
     tree = FrequencyTree()
@@ -150,12 +174,13 @@ def main():
 
     # Create an empty list to store the result
     result_list = []
+    length = 0
 
     # Traverse the frequency tree
-    traverse_tree(tree.root, [], result_list)
+    traverse_tree(tree.root, [], length, result_list)
 
     # Print the result list
-    # print(result_list)
+    print(result_list)
 
     # create 5 letter dictionary
     # with open("../Training Files/words_alpha.txt", "r") as input_file:
@@ -168,14 +193,10 @@ def main():
     #         for word in words:
     #             if len(word) <= 5:
     #                 file_out.write(word + "\n")
-
     #write entire result_list to file
-    with open("result_list.txt", "w") as output_file:
-      for item in result_list:
-        for value in item:
-          output_file.write(str(value))
+    #writeTraversalToFile(result_list)
 
-        output_file.write("\n")
+    writeTraversalToFileCommaSep(result_list)
 
 if __name__ == "__main__":
     main()
