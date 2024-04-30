@@ -167,7 +167,7 @@ int main(int argc, char* argv[]) {
    cudaErrCheck(cudaMalloc((void**)&dy, seqLength * hiddenSize * miniBatch * sizeof(float)));
    cudaErrCheck(cudaMalloc((void**)&dhy, numLayers * hiddenSize * miniBatch * sizeof(float)));
    cudaErrCheck(cudaMalloc((void**)&dcy, numLayers * hiddenSize * miniBatch * sizeof(float)));
-      inputSize
+   
    // Set up tensor descriptors. x/y/dx/dy are arrays, one per time step.
    cudnnTensorDescriptor_t *xDesc, *yDesc, *dxDesc, *dyDesc;
    cudnnTensorDescriptor_t hxDesc, cxDesc;
@@ -299,19 +299,19 @@ int main(int argc, char* argv[]) {
    cudnnErrCheck(cudnnCreateFilterDescriptor(&wDesc));
    cudnnErrCheck(cudnnCreateFilterDescriptor(&dwDesc));
    
-   size_t weightsSize;
-   cudnnErrCheck(cudnnGetRNNWeightSpaceSize(cudnnHandle, rnnDesc, &weightsSize));
+   size_t weightSpaceSize;
+   cudnnErrCheck(cudnnGetRNNWeightSpaceSize(cudnnHandle, rnnDesc, &weightSpaceSize));
    
    int dimW[3];   
-   dimW[0] =  weightsSize / sizeof(float);
+   dimW[0] =  weightSpaceSize / sizeof(int32_t);
    dimW[1] = 1;
    dimW[2] = 1;
       
    cudnnErrCheck(cudnnSetFilterNdDescriptor(wDesc, CUDNN_DATA_INT32, CUDNN_TENSOR_NCHW, 3, dimW));   
    cudnnErrCheck(cudnnSetFilterNdDescriptor(dwDesc, CUDNN_DATA_INT32, CUDNN_TENSOR_NCHW, 3, dimW));   
    
-   cudaErrCheck(cudaMalloc((void**)&w,  weightsSize));
-   cudaErrCheck(cudaMalloc((void**)&dw, weightsSize));
+   cudaErrCheck(cudaMalloc((void**)&w,  weightSpaceSize));
+   cudaErrCheck(cudaMalloc((void**)&dw, weightSpaceSize));
    
    
    // -------------------------
@@ -352,47 +352,44 @@ int main(int argc, char* argv[]) {
    
    for (int layer = 0; layer < numLayers; layer++) {
       for (int linLayerID = 0; linLayerID < numLinearLayers; linLayerID++) {
+         
+         // linear layer matrix descriptor + variable initializations
          cudnnFilterDescriptor_t linLayerMatDesc;
          cudnnErrCheck(cudnnCreateFilterDescriptor(&linLayerMatDesc));
-         float *linLayerMat;
-         
-         // DEPRECATED: replace with cudnnGetRNNWeightParams()
-         cudnnGetRNNWeightParams( cudnnHandle, rnnDesc, layer, weightSpaceSize, *weightSpace, 
-                                                linLayerID, mDesc, **mAddr, bDesc, **bAddr);
-         cudnnErrCheck(cudnnGetRNNLinLayerMatrixParams( cudnnHandle, rnnDesc, layer, xDesc[0], wDesc, w,
-                                                        linLayerID, linLayerMatDesc, (void**)&linLayerMat));
+         int *linLayerMat;
+
+         // linear layer bias descriptor + variable initializations
+         cudnnFilterDescriptor_t linLayerBiasDesc;
+         cudnnErrCheck(cudnnCreateFilterDescriptor(&linLayerBiasDesc));
+         int *linLayerBias;
+
+         //cudnnErrCheck(cudnnGetRNNLinLayerMatrixParams( cudnnHandle, rnnDesc, layer, xDesc[0], wDesc, w,
+                                                        //linLayerID, linLayerMatDesc, (void**)&linLayerMat));
          
          cudnnDataType_t dataType;
          cudnnTensorFormat_t format;
          int nbDims;
          int filterDimA[3];
-         cudnnErrCheck(cudnnGetFilterNdDescriptor(linLayerMatDesc, 3, &dataType, &format, &nbDims, filterDimA));
-                                                  
-         initGPUData(linLayerMat, filterDimA[0] * filterDimA[1] * filterDimA[2], 1.f / (float)(filterDimA[0] * filterDimA[1] * filterDimA[2]));                                                 
-
-         cudnnErrCheck(cudnnDestroyFilterDescriptor(linLayerMatDesc));         
-         
-         cudnnFilterDescriptor_t linLayerBiasDesc;
-         cudnnErrCheck(cudnnCreateFilterDescriptor(&linLayerBiasDesc));
-         float *linLayerBias;
-         
-         // DEPRECATED: replace with cudnnGetRNNWeightParams()
-         cudnnGetRNNWeightParams(
-	cudnnHandle, rnnDesc, layer,
-	size_t weightSpaceSize,
-	const void *weightSpace,
-	int32_t linLayerID,
-    cudnnTensorDescriptor_t mDesc,
-	void **mAddr,
-    cudnnTensorDescriptor_t bDesc,
-	void **bAddr);
-         cudnnErrCheck(cudnnGetRNNLinLayerBiasParams( cudnnHandle, rnnDesc, layer, xDesc[0], wDesc, w, 
-                                                      linLayerID, linLayerBiasDesc, (void**)&linLayerBias));
-         
+         // I think these calls verify that the two descriptors were made properly and can be used
+         cudnnErrCheck(cudnnGetFilterNdDescriptor(linLayerMatDesc, 3, &dataType, &format, &nbDims, filterDimA));                                             
          cudnnErrCheck(cudnnGetFilterNdDescriptor(linLayerBiasDesc, 3, &dataType, &format, &nbDims, filterDimA));
-                                                  
+                  
+         
+
+         
+         // This function is used to obtain the start address and shape of every RNN weight matrix and bias vector in each pseudo-layer within the recurrent network.
+         cudnnGetRNNWeightParams( cudnnHandle, rnnDesc, layer, weightSpaceSize, w, 
+                                                linLayerID, linLayerMatDesc, &linLayerMat, linLayerBiasDesc, &linLayerBias);
+
+         //cudnnErrCheck(cudnnGetRNNLinLayerBiasParams( cudnnHandle, rnnDesc, layer, xDesc[0], wDesc, w, 
+                                                      //linLayerID, linLayerBiasDesc, (void**)&linLayerBias));
+         
+         
+
+         initGPUData(linLayerMat, filterDimA[0] * filterDimA[1] * filterDimA[2], 1.f / (float)(filterDimA[0] * filterDimA[1] * filterDimA[2]));                             
          initGPUData(linLayerBias, filterDimA[0] * filterDimA[1] * filterDimA[2], 1.f);
-                                                  
+
+         cudnnErrCheck(cudnnDestroyFilterDescriptor(linLayerMatDesc));
          cudnnErrCheck(cudnnDestroyFilterDescriptor(linLayerBiasDesc));
       }
    }
@@ -428,11 +425,12 @@ int main(int argc, char* argv[]) {
                                              yDesc, y, hyDesc, hy, cyDesc, cy, workspace, workSize)); */
 
 
-   // DEPRECATED: replace with cudnnRNNForward()
-   cudnnErrCheck(cudnnRNNForwardTraining(cudnnHandle, rnnDesc, seqLength,                                       
+   /*cudnnErrCheck(cudnnRNNForwardTraining(cudnnHandle, rnnDesc, seqLength,                                       
                                          xDesc, x, hxDesc, hx, cxDesc, cx, wDesc, w, 
                                          yDesc, y, hyDesc, hy, cyDesc, cy, 
-                                         workspace, workSize, reserveSpace, reserveSize));
+                                         workspace, workSize, reserveSpace, reserveSize));*/
+   cudnnErrCheck(cudnnRNNForward( cudnnHandle, rnnDesc, CUDNN_FWD_MODE_TRAINING, NULL, xDesc, x, yDesc, y, hxDesc, hx, hy,
+                    cDesc, cx, cy, weightSpaceSize, w, workSize, workSpace, reserveSize, reserveSpace));
                 
    cudaErrCheck(cudaEventRecord(stop));   
    cudaErrCheck(cudaEventSynchronize(stop));
@@ -441,12 +439,13 @@ int main(int argc, char* argv[]) {
    cudaErrCheck(cudaEventRecord(start));
    
 
-   // DEPRECATED: replace with cudnnRNNBackwardWeights_v8()
-   cudnnErrCheck(cudnnRNNBackwardData(cudnnHandle, rnnDesc, seqLength,                                
+   /*cudnnErrCheck(cudnnRNNBackwardData(cudnnHandle, rnnDesc, seqLength,                                
                                yDesc, y, dyDesc, dy, dhyDesc, dhy, dcyDesc, dcy, 
                                wDesc, w, hxDesc, hx, cxDesc, cx, dxDesc, dx, 
                                dhxDesc, dhx, dcxDesc, dcx,
-                               workspace, workSize, reserveSpace, reserveSize ));
+                               workspace, workSize, reserveSpace, reserveSize ));*/
+   cudnnErrCheck(cudnnRNNBackwardWeights_v8( cudnnHandle, rnnDesc, CUDNN_WGRAD_MODE_ADD, NULL, xDesc, x, hDesc, hx,
+                               yDesc, y, weightSpaceSize, dw, workSize, workspace, reserveSize, reserveSpace));
    
    cudaErrCheck(cudaEventRecord(stop));   
    cudaErrCheck(cudaEventSynchronize(stop));
@@ -455,7 +454,7 @@ int main(int argc, char* argv[]) {
    cudaErrCheck(cudaEventRecord(start));
    
    // cudnnRNNBackwardWeights adds to the data in dw.
-   cudaErrCheck(cudaMemset(dw, 0, weightsSize));
+   cudaErrCheck(cudaMemset(dw, 0, weightSpaceSize));
    
    cudnnErrCheck(cudnnRNNBackwardWeights( cudnnHandle, rnnDesc, seqLength, xDesc, x, hxDesc, hx, yDesc, y,
                                     workspace, workSize, dwDesc, dw, reserveSpace, reserveSize ));
@@ -604,13 +603,13 @@ int main(int argc, char* argv[]) {
 
    if (true) {
       float* testOutputdw;
-      testOutputdw = (float*)malloc(weightsSize);
+      testOutputdw = (float*)malloc(weightSpaceSize);
  
-      cudaErrCheck(cudaMemcpy(testOutputdw, dw, weightsSize, cudaMemcpyDeviceToHost));
+      cudaErrCheck(cudaMemcpy(testOutputdw, dw, weightSpaceSize, cudaMemcpyDeviceToHost));
       
       double checksumdw = 0.;
             
-      for (int i = 0; i < weightsSize / sizeof(float); i++) {
+      for (int i = 0; i < weightSpaceSize / sizeof(float); i++) {
          checksumdw += testOutputdw[i];
       }
       
