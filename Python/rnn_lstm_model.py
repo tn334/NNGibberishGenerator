@@ -61,12 +61,12 @@ class WordDataset(Dataset):
 
 # Define hyperparameters
 input_size = 26       # dimensionality of input data
-hidden_size = 512     # size of hidden state in LSTM
+hidden_size = 600     # size of hidden state in LSTM
 output_size = 26      # dimensionality of output data
-learning_rate = 0.001 # learning rate for optimization
+learning_rate = 0.012 # learning rate for optimization
 batch_size = 32       # batch size for training
-num_epochs = 50       # num of training gens
-log_interval = 100    # log interval for training
+num_epochs = 10       # num of training gens
+log_interval = 95    # log interval for training
 
 # read file data
 data = open("../Output/5_letter_frequency_list_padded_comma_sep.txt", "r").readlines() 
@@ -120,6 +120,16 @@ def generate_word(model, seed_input, length):
         seed_input = torch.zeros(1, 1, 26, device=device) # prepare next input 
         seed_input[0, 0, next_char_index] = 1 # set next input character
     return word
+
+# display set hyperparameters used
+print(f"""
+    HYPERPARAMETERS 
+      - hidden size: {hidden_size} 
+      - learning rate: {learning_rate} 
+      - batch size: {batch_size} 
+      - total epochs: {num_epochs}
+      - log interval: {log_interval}
+      """)
 
 # Train the model
 train(model, train_loader, criterion, optimizer, num_epochs)
