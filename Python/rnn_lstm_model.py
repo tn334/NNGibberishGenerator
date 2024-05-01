@@ -12,8 +12,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class LSTMModel(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super(LSTMModel, self).__init__()
-        self.lstm = nn.LSTM(input_size, hidden_size, batch_first=True) # LSTM Layer
-        self.fc = nn.Linear(hidden_size, output_size) # Sync Layer
+        self.lstm = nn.LSTM(input_size, hidden_size, batch_first=True, bidirectional=True) # LSTM Layer
+        self.fc = nn.Linear(hidden_size * 2, output_size) # Sync Layer
     
     # forward pass
     def forward(self, x):
@@ -59,27 +59,40 @@ class WordDataset(Dataset):
         targets = torch.stack(targets) # stack the targets
         return inputs, targets # return collated inputs and targets
 
-# Define hyperparameters
+# hyperparameters 5 letter dict
 input_size = 26       # dimensionality of input data
 hidden_size = 600     # size of hidden state in LSTM
 output_size = 26      # dimensionality of output data
-learning_rate = 0.012 # learning rate for optimization
+learning_rate = 0.013 # learning rate for optimization
 batch_size = 32       # batch size for training
-num_epochs = 10       # num of training gens
+num_epochs = 5       # num of training gens
 log_interval = 95     # log interval for training
 
+# # hyperparameters 20 letter dict
+# input_size = 26       # dimensionality of input data
+# hidden_size = 256     # size of hidden state in LSTM
+# output_size = 26      # dimensionality of output data
+# learning_rate = 0.050 # learning rate for optimization
+# batch_size = 40       # batch size for training
+# num_epochs = 5       # num of training gens
+# log_interval = 600     # log interval for training
+
 # read file data
-data = open("../Output/5_letter_frequency_list_padded_comma_sep.txt", "r").readlines() 
+data = open("../Training Files/5_letter_frequency_list_padded_comma_sep.txt", "r").readlines() 
 dataset = WordDataset(data) # create dataset
 train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, collate_fn=dataset.collate_fn) # create data loader
 
 # start lstm model
 model = LSTMModel(input_size, hidden_size, output_size)
-criterion = nn.CrossEntropyLoss() # set loss function
-optimizer = optim.Adam(model.parameters(), lr=learning_rate) # set optimizer
+model.to(device)
+
+# set loss function and optimizer
+criterion = nn.CrossEntropyLoss(ignore_index=0)
+optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 # training function
 def train(model, train_loader, criterion, optimizer, num_epochs):
+    model.train() # Set the model to training mode
     for epoch in range(num_epochs): # iterate over epochs
         for batch_idx, (inputs, targets) in enumerate(train_loader): # iterate over batches
             optimizer.zero_grad() # zero gradients
