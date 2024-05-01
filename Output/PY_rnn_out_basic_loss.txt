@@ -1,0 +1,513 @@
+/home/ericks/.local/lib/python3.10/site-packages/torch/cuda/__init__.py:619: UserWarning: Can't initialize NVML
+  warnings.warn("Can't initialize NVML")
+Epoch 1, Batch 1/613, Loss: 3.2428627014160156
+Epoch 1, Batch 101/613, Loss: 0.0026698641013354063
+Epoch 1, Batch 201/613, Loss: 0.0026639814022928476
+Epoch 1, Batch 301/613, Loss: 0.003585676196962595
+Epoch 1, Batch 401/613, Loss: 0.0006054131081327796
+Epoch 1, Batch 501/613, Loss: 0.004101927392184734
+Epoch 1, Batch 601/613, Loss: 0.0006304252310656011
+
+Generated word after epoch 1: moewa
+
+Epoch 2, Batch 1/613, Loss: 0.0007858709432184696
+Epoch 2, Batch 101/613, Loss: 0.03421592712402344
+Epoch 2, Batch 201/613, Loss: 0.0012590973637998104
+Epoch 2, Batch 301/613, Loss: 0.03920943662524223
+Epoch 2, Batch 401/613, Loss: 0.0015607234090566635
+Epoch 2, Batch 501/613, Loss: 0.00033012733911164105
+Epoch 2, Batch 601/613, Loss: 0.001145867514424026
+
+Generated word after epoch 2: fuhpz
+
+Epoch 3, Batch 1/613, Loss: 0.001740216976031661
+Epoch 3, Batch 101/613, Loss: 0.0013142231618985534
+Epoch 3, Batch 201/613, Loss: 0.0004931447328999639
+Epoch 3, Batch 301/613, Loss: 0.00034316329401917756
+Epoch 3, Batch 401/613, Loss: 0.0018327798461541533
+Epoch 3, Batch 501/613, Loss: 0.0002621732419356704
+Epoch 3, Batch 601/613, Loss: 0.001624970231205225
+
+Generated word after epoch 3: kxypa
+
+Epoch 4, Batch 1/613, Loss: 0.2082856446504593
+Epoch 4, Batch 101/613, Loss: 0.0018865583697333932
+Epoch 4, Batch 201/613, Loss: 0.00016884806973394006
+Epoch 4, Batch 301/613, Loss: 0.0007253177464008331
+Epoch 4, Batch 401/613, Loss: 0.0008189505315385759
+Epoch 4, Batch 501/613, Loss: 0.0005565399769693613
+Epoch 4, Batch 601/613, Loss: 0.0008807128178887069
+
+Generated word after epoch 4: bniab
+
+Epoch 5, Batch 1/613, Loss: 0.0006750373868271708
+Epoch 5, Batch 101/613, Loss: 0.0005339425406418741
+Epoch 5, Batch 201/613, Loss: 0.0005761455395258963
+Epoch 5, Batch 301/613, Loss: 0.00046832935186102986
+Epoch 5, Batch 401/613, Loss: 6.487125938292593e-05
+Epoch 5, Batch 501/613, Loss: 0.000552575511392206
+Epoch 5, Batch 601/613, Loss: 0.0007141194073483348
+
+Generated word after epoch 5: hmywu
+
+Epoch 6, Batch 1/613, Loss: 0.000293585704639554
+Epoch 6, Batch 101/613, Loss: 0.001965260598808527
+Epoch 6, Batch 201/613, Loss: 0.00012874019739683717
+Epoch 6, Batch 301/613, Loss: 0.004461678676307201
+Epoch 6, Batch 401/613, Loss: 0.00033106160117313266
+Epoch 6, Batch 501/613, Loss: 0.000369908579159528
+Epoch 6, Batch 601/613, Loss: 0.0009885993786156178
+
+Generated word after epoch 6: inwpg
+
+Epoch 7, Batch 1/613, Loss: 0.12043185532093048
+Epoch 7, Batch 101/613, Loss: 0.0029970488976687193
+Epoch 7, Batch 201/613, Loss: 0.0006075981655158103
+Epoch 7, Batch 301/613, Loss: 0.00035199796548113227
+Epoch 7, Batch 401/613, Loss: 0.0021422323770821095
+Epoch 7, Batch 501/613, Loss: 0.0006945694913156331
+Epoch 7, Batch 601/613, Loss: 0.002133751753717661
+
+Generated word after epoch 7: kkjgb
+
+Epoch 8, Batch 1/613, Loss: 0.0010569457663223147
+Epoch 8, Batch 101/613, Loss: 0.0012964371126145124
+Epoch 8, Batch 201/613, Loss: 0.0036308448761701584
+Epoch 8, Batch 301/613, Loss: 0.0080964220687747
+Epoch 8, Batch 401/613, Loss: 0.16938404738903046
+Epoch 8, Batch 501/613, Loss: 9.825539746088907e-05
+Epoch 8, Batch 601/613, Loss: 5.54086800548248e-05
+
+Generated word after epoch 8: ucxka
+
+Epoch 9, Batch 1/613, Loss: 8.505013829562813e-05
+Epoch 9, Batch 101/613, Loss: 0.00017199368448927999
+Epoch 9, Batch 201/613, Loss: 0.000892851734533906
+Epoch 9, Batch 301/613, Loss: 5.1573624659795314e-05
+Epoch 9, Batch 401/613, Loss: 7.247568282764405e-05
+Epoch 9, Batch 501/613, Loss: 0.1553572416305542
+Epoch 9, Batch 601/613, Loss: 9.886168118100613e-05
+
+Generated word after epoch 9: hpwvb
+
+Epoch 10, Batch 1/613, Loss: 0.004083662759512663
+Epoch 10, Batch 101/613, Loss: 0.001598238362930715
+Epoch 10, Batch 201/613, Loss: 0.0004220897099003196
+Epoch 10, Batch 301/613, Loss: 0.00459898728877306
+Epoch 10, Batch 401/613, Loss: 0.00012800056720152497
+Epoch 10, Batch 501/613, Loss: 0.0006560974870808423
+Epoch 10, Batch 601/613, Loss: 6.21670187683776e-05
+
+Generated word after epoch 10: laizt
+
+Epoch 11, Batch 1/613, Loss: 0.010617156513035297
+Epoch 11, Batch 101/613, Loss: 8.201295713661239e-05
+Epoch 11, Batch 201/613, Loss: 0.002160286298021674
+Epoch 11, Batch 301/613, Loss: 4.289798380341381e-05
+Epoch 11, Batch 401/613, Loss: 0.0004106177657376975
+Epoch 11, Batch 501/613, Loss: 0.008334266021847725
+Epoch 11, Batch 601/613, Loss: 3.0103037715889513e-05
+
+Generated word after epoch 11: nyqoo
+
+Epoch 12, Batch 1/613, Loss: 0.0010215968359261751
+Epoch 12, Batch 101/613, Loss: 0.00030754489125683904
+Epoch 12, Batch 201/613, Loss: 7.712992373853922e-05
+Epoch 12, Batch 301/613, Loss: 0.0012984283966943622
+Epoch 12, Batch 401/613, Loss: 0.0034979195334017277
+Epoch 12, Batch 501/613, Loss: 0.005929800681769848
+Epoch 12, Batch 601/613, Loss: 7.207664020825177e-05
+
+Generated word after epoch 12: vlxbu
+
+Epoch 13, Batch 1/613, Loss: 2.6619312848197296e-05
+Epoch 13, Batch 101/613, Loss: 0.0009970555547624826
+Epoch 13, Batch 201/613, Loss: 4.2602310713846236e-05
+Epoch 13, Batch 301/613, Loss: 0.003255698597058654
+Epoch 13, Batch 401/613, Loss: 2.126717117789667e-05
+Epoch 13, Batch 501/613, Loss: 0.00026854040334001184
+Epoch 13, Batch 601/613, Loss: 5.184107430977747e-05
+
+Generated word after epoch 13: uwgrs
+
+Epoch 14, Batch 1/613, Loss: 0.0017253091791644692
+Epoch 14, Batch 101/613, Loss: 0.0011495340149849653
+Epoch 14, Batch 201/613, Loss: 8.620155131211504e-05
+Epoch 14, Batch 301/613, Loss: 0.0002958792319986969
+Epoch 14, Batch 401/613, Loss: 1.5120706848392729e-05
+Epoch 14, Batch 501/613, Loss: 0.002403835067525506
+Epoch 14, Batch 601/613, Loss: 0.00024384613789152354
+
+Generated word after epoch 14: lewbd
+
+Epoch 15, Batch 1/613, Loss: 0.0016508406260982156
+Epoch 15, Batch 101/613, Loss: 0.006371053401380777
+Epoch 15, Batch 201/613, Loss: 3.358511457918212e-05
+Epoch 15, Batch 301/613, Loss: 0.00014295616711024195
+Epoch 15, Batch 401/613, Loss: 0.0028182128444314003
+Epoch 15, Batch 501/613, Loss: 0.024858839809894562
+Epoch 15, Batch 601/613, Loss: 0.07646090537309647
+
+Generated word after epoch 15: yoyqe
+
+Epoch 16, Batch 1/613, Loss: 0.00016853312263265252
+Epoch 16, Batch 101/613, Loss: 0.00019936783064622432
+Epoch 16, Batch 201/613, Loss: 0.00017466700228396803
+Epoch 16, Batch 301/613, Loss: 0.0002925457083620131
+Epoch 16, Batch 401/613, Loss: 0.00011345600796630606
+Epoch 16, Batch 501/613, Loss: 1.9628001609817147e-05
+Epoch 16, Batch 601/613, Loss: 0.00017766437667887658
+
+Generated word after epoch 16: xtuzn
+
+Epoch 17, Batch 1/613, Loss: 0.00012098942534066737
+Epoch 17, Batch 101/613, Loss: 0.0021640858612954617
+Epoch 17, Batch 201/613, Loss: 2.2030943000572734e-05
+Epoch 17, Batch 301/613, Loss: 7.926984835648909e-05
+Epoch 17, Batch 401/613, Loss: 0.010416139848530293
+Epoch 17, Batch 501/613, Loss: 4.6924800699343905e-05
+Epoch 17, Batch 601/613, Loss: 0.003730442840605974
+
+Generated word after epoch 17: fihwc
+
+Epoch 18, Batch 1/613, Loss: 2.0954361389158294e-05
+Epoch 18, Batch 101/613, Loss: 1.4297417692432646e-05
+Epoch 18, Batch 201/613, Loss: 3.0433820938924327e-05
+Epoch 18, Batch 301/613, Loss: 0.00048792504821904004
+Epoch 18, Batch 401/613, Loss: 0.013391138054430485
+Epoch 18, Batch 501/613, Loss: 2.712240893743001e-05
+Epoch 18, Batch 601/613, Loss: 0.0018663820810616016
+
+Generated word after epoch 18: ecfhk
+
+Epoch 19, Batch 1/613, Loss: 0.003192596137523651
+Epoch 19, Batch 101/613, Loss: 0.0004954203614033759
+Epoch 19, Batch 201/613, Loss: 0.02772432193160057
+Epoch 19, Batch 301/613, Loss: 0.0031912028789520264
+Epoch 19, Batch 401/613, Loss: 2.996804687427357e-05
+Epoch 19, Batch 501/613, Loss: 0.011174687184393406
+Epoch 19, Batch 601/613, Loss: 0.00022134976461529732
+
+Generated word after epoch 19: ikuns
+
+Epoch 20, Batch 1/613, Loss: 0.0038787969388067722
+Epoch 20, Batch 101/613, Loss: 0.09666310995817184
+Epoch 20, Batch 201/613, Loss: 0.0002453089982736856
+Epoch 20, Batch 301/613, Loss: 0.00017380123608745635
+Epoch 20, Batch 401/613, Loss: 1.255402821698226e-05
+Epoch 20, Batch 501/613, Loss: 1.7671953173703514e-05
+Epoch 20, Batch 601/613, Loss: 0.012240814976394176
+
+Generated word after epoch 20: zwizj
+
+Epoch 21, Batch 1/613, Loss: 2.2783173335483298e-05
+Epoch 21, Batch 101/613, Loss: 5.291634806781076e-05
+Epoch 21, Batch 201/613, Loss: 0.00031458682497031987
+Epoch 21, Batch 301/613, Loss: 5.114689702168107e-05
+Epoch 21, Batch 401/613, Loss: 0.002252882579341531
+Epoch 21, Batch 501/613, Loss: 0.0002448477316647768
+Epoch 21, Batch 601/613, Loss: 8.62025535752764e-06
+
+Generated word after epoch 21: mbagm
+
+Epoch 22, Batch 1/613, Loss: 0.0025589531287550926
+Epoch 22, Batch 101/613, Loss: 2.7869824407389387e-05
+Epoch 22, Batch 201/613, Loss: 7.651680789422244e-06
+Epoch 22, Batch 301/613, Loss: 2.0801415303139947e-05
+Epoch 22, Batch 401/613, Loss: 4.48941282229498e-05
+Epoch 22, Batch 501/613, Loss: 0.0014388205017894506
+Epoch 22, Batch 601/613, Loss: 0.09888806194067001
+
+Generated word after epoch 22: jyyff
+
+Epoch 23, Batch 1/613, Loss: 0.0021986861247569323
+Epoch 23, Batch 101/613, Loss: 4.807446384802461e-05
+Epoch 23, Batch 201/613, Loss: 6.531647522933781e-05
+Epoch 23, Batch 301/613, Loss: 0.004711680114269257
+Epoch 23, Batch 401/613, Loss: 1.91661838471191e-05
+Epoch 23, Batch 501/613, Loss: 0.14889803528785706
+Epoch 23, Batch 601/613, Loss: 4.042318323627114e-05
+
+Generated word after epoch 23: ohfzb
+
+Epoch 24, Batch 1/613, Loss: 5.330062049324624e-05
+Epoch 24, Batch 101/613, Loss: 4.112178794457577e-05
+Epoch 24, Batch 201/613, Loss: 3.030210245924536e-05
+Epoch 24, Batch 301/613, Loss: 0.002763937460258603
+Epoch 24, Batch 401/613, Loss: 0.00268556852824986
+Epoch 24, Batch 501/613, Loss: 1.173067903437186e-05
+Epoch 24, Batch 601/613, Loss: 1.2922843779961113e-05
+
+Generated word after epoch 24: hggid
+
+Epoch 25, Batch 1/613, Loss: 2.915212098741904e-05
+Epoch 25, Batch 101/613, Loss: 0.09907335788011551
+Epoch 25, Batch 201/613, Loss: 0.021670158952474594
+Epoch 25, Batch 301/613, Loss: 0.0004804041818715632
+Epoch 25, Batch 401/613, Loss: 1.0076671969727613e-05
+Epoch 25, Batch 501/613, Loss: 0.0832933709025383
+Epoch 25, Batch 601/613, Loss: 0.007319608703255653
+
+Generated word after epoch 25: eaapn
+
+Epoch 26, Batch 1/613, Loss: 1.7336678865831345e-05
+Epoch 26, Batch 101/613, Loss: 0.0006404592422768474
+Epoch 26, Batch 201/613, Loss: 2.586174196039792e-05
+Epoch 26, Batch 301/613, Loss: 0.0024198631290346384
+Epoch 26, Batch 401/613, Loss: 2.248295277240686e-05
+Epoch 26, Batch 501/613, Loss: 3.040737283299677e-05
+Epoch 26, Batch 601/613, Loss: 0.03823695704340935
+
+Generated word after epoch 26: ulqmp
+
+Epoch 27, Batch 1/613, Loss: 6.02741874899948e-06
+Epoch 27, Batch 101/613, Loss: 5.472414159157779e-06
+Epoch 27, Batch 201/613, Loss: 7.655374247406144e-06
+Epoch 27, Batch 301/613, Loss: 8.128336048685014e-06
+Epoch 27, Batch 401/613, Loss: 3.656564877019264e-05
+Epoch 27, Batch 501/613, Loss: 3.984836075687781e-05
+Epoch 27, Batch 601/613, Loss: 9.614867849450093e-06
+
+Generated word after epoch 27: weuav
+
+Epoch 28, Batch 1/613, Loss: 1.2266314115549903e-05
+Epoch 28, Batch 101/613, Loss: 5.680979938915698e-06
+Epoch 28, Batch 201/613, Loss: 4.038188762933714e-06
+Epoch 28, Batch 301/613, Loss: 0.04995300620794296
+Epoch 28, Batch 401/613, Loss: 1.3030543414060958e-05
+Epoch 28, Batch 501/613, Loss: 0.005273585673421621
+Epoch 28, Batch 601/613, Loss: 1.2237249393365346e-05
+
+Generated word after epoch 28: rszfs
+
+Epoch 29, Batch 1/613, Loss: 1.0102706255565863e-05
+Epoch 29, Batch 101/613, Loss: 0.0018999928142875433
+Epoch 29, Batch 201/613, Loss: 1.1365313184796833e-05
+Epoch 29, Batch 301/613, Loss: 1.6054629668360576e-05
+Epoch 29, Batch 401/613, Loss: 0.002767043886706233
+Epoch 29, Batch 501/613, Loss: 7.186039510997944e-06
+Epoch 29, Batch 601/613, Loss: 0.0006918823928572237
+
+Generated word after epoch 29: tulot
+
+Epoch 30, Batch 1/613, Loss: 0.006517678964883089
+Epoch 30, Batch 101/613, Loss: 0.0005672742263413966
+Epoch 30, Batch 201/613, Loss: 8.324785449076444e-05
+Epoch 30, Batch 301/613, Loss: 0.00035259436117485166
+Epoch 30, Batch 401/613, Loss: 6.365964509313926e-05
+Epoch 30, Batch 501/613, Loss: 4.123099643038586e-05
+Epoch 30, Batch 601/613, Loss: 2.0276060240576044e-05
+
+Generated word after epoch 30: enekw
+
+Epoch 31, Batch 1/613, Loss: 2.054425931419246e-05
+Epoch 31, Batch 101/613, Loss: 2.1247842596494593e-05
+Epoch 31, Batch 201/613, Loss: 5.6835739087546244e-05
+Epoch 31, Batch 301/613, Loss: 1.4811312212259509e-05
+Epoch 31, Batch 401/613, Loss: 3.2670821383362636e-05
+Epoch 31, Batch 501/613, Loss: 0.0007662033312954009
+Epoch 31, Batch 601/613, Loss: 4.531030572252348e-05
+
+Generated word after epoch 31: sucml
+
+Epoch 32, Batch 1/613, Loss: 0.001548898289911449
+Epoch 32, Batch 101/613, Loss: 0.0007541411905549467
+Epoch 32, Batch 201/613, Loss: 8.851158781908453e-06
+Epoch 32, Batch 301/613, Loss: 4.172305580141256e-06
+Epoch 32, Batch 401/613, Loss: 7.368551905528875e-06
+Epoch 32, Batch 501/613, Loss: 6.694288458675146e-06
+Epoch 32, Batch 601/613, Loss: 1.9479843103908934e-05
+
+Generated word after epoch 32: nuqcc
+
+Epoch 33, Batch 1/613, Loss: 3.9643382478971034e-05
+Epoch 33, Batch 101/613, Loss: 8.888445336197037e-06
+Epoch 33, Batch 201/613, Loss: 1.9958126358687878e-05
+Epoch 33, Batch 301/613, Loss: 1.3712018699152395e-05
+Epoch 33, Batch 401/613, Loss: 8.322178473463282e-06
+Epoch 33, Batch 501/613, Loss: 6.053503057046328e-06
+Epoch 33, Batch 601/613, Loss: 0.00017422410019207746
+
+Generated word after epoch 33: eagfb
+
+Epoch 34, Batch 1/613, Loss: 7.536133580288151e-06
+Epoch 34, Batch 101/613, Loss: 8.553078259865288e-06
+Epoch 34, Batch 201/613, Loss: 4.313856607041089e-06
+Epoch 34, Batch 301/613, Loss: 4.5410997699946165e-06
+Epoch 34, Batch 401/613, Loss: 0.00029385791276581585
+Epoch 34, Batch 501/613, Loss: 3.952508450311143e-06
+Epoch 34, Batch 601/613, Loss: 5.411537131294608e-05
+
+Generated word after epoch 34: rxihh
+
+Epoch 35, Batch 1/613, Loss: 5.99765508013661e-06
+Epoch 35, Batch 101/613, Loss: 5.3867106544203125e-06
+Epoch 35, Batch 201/613, Loss: 7.273290248122066e-05
+Epoch 35, Batch 301/613, Loss: 4.868910309596686e-06
+Epoch 35, Batch 401/613, Loss: 7.014610673650168e-06
+Epoch 35, Batch 501/613, Loss: 0.005336116999387741
+Epoch 35, Batch 601/613, Loss: 7.16362001185189e-06
+
+Generated word after epoch 35: pklry
+
+Epoch 36, Batch 1/613, Loss: 5.099879217596026e-06
+Epoch 36, Batch 101/613, Loss: 5.7965025916928425e-06
+Epoch 36, Batch 201/613, Loss: 0.006157138384878635
+Epoch 36, Batch 301/613, Loss: 0.0008315492887049913
+Epoch 36, Batch 401/613, Loss: 0.022390229627490044
+Epoch 36, Batch 501/613, Loss: 8.087295282166451e-05
+Epoch 36, Batch 601/613, Loss: 0.011861583217978477
+
+Generated word after epoch 36: tscbl
+
+Epoch 37, Batch 1/613, Loss: 0.00010586758435238153
+Epoch 37, Batch 101/613, Loss: 5.8771620388142765e-05
+Epoch 37, Batch 201/613, Loss: 1.944148425536696e-05
+Epoch 37, Batch 301/613, Loss: 3.779370672418736e-05
+Epoch 37, Batch 401/613, Loss: 7.450857810908929e-05
+Epoch 37, Batch 501/613, Loss: 1.6304602468153462e-05
+Epoch 37, Batch 601/613, Loss: 0.01149850245565176
+
+Generated word after epoch 37: zkdai
+
+Epoch 38, Batch 1/613, Loss: 0.004604036454111338
+Epoch 38, Batch 101/613, Loss: 9.432279512111563e-06
+Epoch 38, Batch 201/613, Loss: 2.6688314392231405e-05
+Epoch 38, Batch 301/613, Loss: 3.094986095675267e-05
+Epoch 38, Batch 401/613, Loss: 1.1529115909070242e-05
+Epoch 38, Batch 501/613, Loss: 0.004111547954380512
+Epoch 38, Batch 601/613, Loss: 5.911977950745495e-06
+
+Generated word after epoch 38: ftkwf
+
+Epoch 39, Batch 1/613, Loss: 8.54941117722774e-06
+Epoch 39, Batch 101/613, Loss: 3.963656126870774e-06
+Epoch 39, Batch 201/613, Loss: 9.413524821866304e-06
+Epoch 39, Batch 301/613, Loss: 5.5468954087700695e-06
+Epoch 39, Batch 401/613, Loss: 8.841902308631688e-05
+Epoch 39, Batch 501/613, Loss: 7.323848421947332e-06
+Epoch 39, Batch 601/613, Loss: 7.818919584678952e-06
+
+Generated word after epoch 39: aydpm
+
+Epoch 40, Batch 1/613, Loss: 7.677699613850564e-06
+Epoch 40, Batch 101/613, Loss: 7.454214028257411e-06
+Epoch 40, Batch 201/613, Loss: 1.0359642146795522e-05
+Epoch 40, Batch 301/613, Loss: 0.0010908052790910006
+Epoch 40, Batch 401/613, Loss: 1.2438398698577657e-05
+Epoch 40, Batch 501/613, Loss: 4.786956651514629e-06
+Epoch 40, Batch 601/613, Loss: 6.597336778213503e-06
+
+Generated word after epoch 40: rmxkf
+
+Epoch 41, Batch 1/613, Loss: 6.507999842142453e-06
+Epoch 41, Batch 101/613, Loss: 3.6023088796355296e-06
+Epoch 41, Batch 201/613, Loss: 6.1130726862757e-06
+Epoch 41, Batch 301/613, Loss: 4.120146058994578e-06
+Epoch 41, Batch 401/613, Loss: 6.870855577290058e-05
+Epoch 41, Batch 501/613, Loss: 0.0046720304526388645
+Epoch 41, Batch 601/613, Loss: 6.411157301045023e-06
+
+Generated word after epoch 41: vfwvw
+
+Epoch 42, Batch 1/613, Loss: 5.546875854633981e-06
+Epoch 42, Batch 101/613, Loss: 0.00021048184134997427
+Epoch 42, Batch 201/613, Loss: 1.1357909897924401e-05
+Epoch 42, Batch 301/613, Loss: 4.429325144883478e-06
+Epoch 42, Batch 401/613, Loss: 8.146679647325072e-06
+Epoch 42, Batch 501/613, Loss: 1.1532863027241547e-05
+Epoch 42, Batch 601/613, Loss: 1.3846392903360538e-05
+
+Generated word after epoch 42: mnhhv
+
+Epoch 43, Batch 1/613, Loss: 0.0004427809326443821
+Epoch 43, Batch 101/613, Loss: 0.0002491958439350128
+Epoch 43, Batch 201/613, Loss: 3.3303952022833982e-06
+Epoch 43, Batch 301/613, Loss: 0.003109182231128216
+Epoch 43, Batch 401/613, Loss: 3.926398221665295e-06
+Epoch 43, Batch 501/613, Loss: 2.2803807951277122e-05
+Epoch 43, Batch 601/613, Loss: 4.790592811332317e-06
+
+Generated word after epoch 43: vruak
+
+Epoch 44, Batch 1/613, Loss: 6.109382866270607e-06
+Epoch 44, Batch 101/613, Loss: 5.7815782383841e-06
+Epoch 44, Batch 201/613, Loss: 7.223154170787893e-06
+Epoch 44, Batch 301/613, Loss: 8.981362043414265e-06
+Epoch 44, Batch 401/613, Loss: 9.682975360192358e-05
+Epoch 44, Batch 501/613, Loss: 1.1458753760962281e-05
+Epoch 44, Batch 601/613, Loss: 0.009006842039525509
+
+Generated word after epoch 44: hydvu
+
+Epoch 45, Batch 1/613, Loss: 1.978122327273013e-06
+Epoch 45, Batch 101/613, Loss: 0.002255489118397236
+Epoch 45, Batch 201/613, Loss: 4.065283792442642e-05
+Epoch 45, Batch 301/613, Loss: 1.0910608580161352e-05
+Epoch 45, Batch 401/613, Loss: 0.00011251679097767919
+Epoch 45, Batch 501/613, Loss: 2.5853366878436645e-06
+Epoch 45, Batch 601/613, Loss: 4.611836629919708e-06
+
+Generated word after epoch 45: uevnc
+
+Epoch 46, Batch 1/613, Loss: 3.2595944503555074e-06
+Epoch 46, Batch 101/613, Loss: 0.003409910947084427
+Epoch 46, Batch 201/613, Loss: 2.3599368432769552e-05
+Epoch 46, Batch 301/613, Loss: 3.036063844774617e-06
+Epoch 46, Batch 401/613, Loss: 0.00010849768295884132
+Epoch 46, Batch 501/613, Loss: 2.7306186893838458e-06
+Epoch 46, Batch 601/613, Loss: 3.736439566637273e-06
+
+Generated word after epoch 46: inklb
+
+Epoch 47, Batch 1/613, Loss: 2.0153750028839568e-06
+Epoch 47, Batch 101/613, Loss: 1.6875491155587952e-06
+Epoch 47, Batch 201/613, Loss: 5.3680696510127746e-06
+Epoch 47, Batch 301/613, Loss: 5.268034874461591e-05
+Epoch 47, Batch 401/613, Loss: 0.03358474746346474
+Epoch 47, Batch 501/613, Loss: 0.006449033040553331
+Epoch 47, Batch 601/613, Loss: 0.00013642293924931437
+
+Generated word after epoch 47: cvtog
+
+Epoch 48, Batch 1/613, Loss: 2.02155570150353e-05
+Epoch 48, Batch 101/613, Loss: 2.650481110322289e-05
+Epoch 48, Batch 201/613, Loss: 2.3611995857208967e-05
+Epoch 48, Batch 301/613, Loss: 4.58580871054437e-06
+Epoch 48, Batch 401/613, Loss: 4.637845904653659e-06
+Epoch 48, Batch 501/613, Loss: 0.00012910905934404582
+Epoch 48, Batch 601/613, Loss: 3.2260716125165345e-06
+
+Generated word after epoch 48: jmeeu
+
+Epoch 49, Batch 1/613, Loss: 1.873811129371461e-06
+Epoch 49, Batch 101/613, Loss: 6.798534741392359e-06
+Epoch 49, Batch 201/613, Loss: 0.07354836910963058
+Epoch 49, Batch 301/613, Loss: 9.849441994447261e-06
+Epoch 49, Batch 401/613, Loss: 1.0712678886193316e-05
+Epoch 49, Batch 501/613, Loss: 0.0003936352441087365
+Epoch 49, Batch 601/613, Loss: 7.621725671924651e-06
+
+Generated word after epoch 49: apwfv
+
+Epoch 50, Batch 1/613, Loss: 2.205358441642602e-06
+Epoch 50, Batch 101/613, Loss: 1.0374284101999365e-05
+Epoch 50, Batch 201/613, Loss: 5.159251031727763e-06
+Epoch 50, Batch 301/613, Loss: 1.4528566225635586e-06
+Epoch 50, Batch 401/613, Loss: 1.0374275007052347e-05
+Epoch 50, Batch 501/613, Loss: 1.8477201138011878e-06
+Epoch 50, Batch 601/613, Loss: 2.954137926280964e-06
+
+Generated word after epoch 50: kuunk
+
+
+15 words accepted
+moewa, fuhpz, laizt, nyqoo, lewbd, yoyqe, ikuns, jyyff, eaapn, weauv, tulot, vruak, hydvu, inklb, kuunk
+
+1 word maybe
+enekw
+
+34 words not accepted
+kxypa, bniab, hmywu, inwpg, kkjgb, ucxka, hpwvb, vlxbu, uwgrs, xtuzn, fihwc, ecfhk, zwizj, mbagm, ohfzb, hggid, 
+ulqmp, rszfs, sucml, nuqcc, eagfb, rxihh, pklry, tscbl, zkdai, ftkwf, aydpm, rmxkf, vfwvw, mnhhv, uevnc, cvtog, 
+jmeeu, apwfv
