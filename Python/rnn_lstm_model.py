@@ -66,7 +66,7 @@ output_size = 26      # dimensionality of output data
 learning_rate = 0.012 # learning rate for optimization
 batch_size = 32       # batch size for training
 num_epochs = 10       # num of training gens
-log_interval = 95    # log interval for training
+log_interval = 95     # log interval for training
 
 # read file data
 data = open("../Output/5_letter_frequency_list_padded_comma_sep.txt", "r").readlines() 
