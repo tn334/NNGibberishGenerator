@@ -1,0 +1,91 @@
+    input_size = 26: This parameter defines the dimensionality of your input data. If you increase it, 
+    your model will have more input features to learn from, 
+    potentially allowing it to capture more complex patterns in the data. 
+    Conversely, decreasing it may lead to a loss of information and potentially poorer performance.
+
+    hidden_size = 512: This parameter determines the size of the hidden state in the LSTM. 
+    A larger hidden size can allow the model to capture more complex relationships in the data but may also 
+    increase computational complexity and the risk of overfitting. Conversely, reducing the hidden size might 
+    lead to a less expressive model.
+
+    output_size = 26: Similar to input_size, this parameter defines the dimensionality of the output data. 
+    If you change it, you are essentially changing the dimensionality of the output space of your model. 
+    Ensure that it matches the dimensionality of your target data.
+
+    learning_rate = 0.001: Learning rate controls the step size of the weights update during optimization. 
+    A higher learning rate may cause faster convergence but risks overshooting the optimal solution, 
+    while a lower learning rate may converge more slowly but with potentially better precision. 
+    It's often a hyperparameter that requires tuning based on the specific problem and model architecture.
+
+    batch_size = 32: Batch size determines the number of samples that will be propagated through the 
+    network before updating the parameters. A larger batch size might lead to faster convergence but requires 
+    more memory. Conversely, a smaller batch size may lead to noisier updates but can help the model generalize better.
+
+    num_epochs = 50: This parameter specifies the number of times the entire dataset is passed forward and 
+    backward through the neural network. Increasing the number of epochs may allow the model to see the data 
+    more times and potentially learn more complex patterns, but be cautious of overfitting. Conversely, reducing 
+    the number of epochs might lead to underfitting.
+
+    log_interval = 100: This parameter controls how often you log or display training metrics 
+    (such as loss, accuracy, etc.). Decreasing it will result in more frequent updates, giving you more 
+    granular information about the training progress, but might also slow down the training process due to 
+    the additional logging overhead.
+
+
+
+    ###################################### HYPERPARAMETER CONFIGURATIONS ########################################
+    HYPERPARAMETERS (BASELINE)
+      - hidden size: 512 
+      - learning rate: 0.001 
+      - batch size: 32 
+      - total epochs: 3
+      - log interval: 100
+      - Words: phyhv, ovbvq, dwycn
+
+    HYPERPARAMETERS  
+      - other use baseline values
+      - learning_rate: 0.01 
+      - Words: rwmva, efntv, hdeel
+
+    HYPERPARAMETERS 
+      - other use baseline values
+      - learning rate: 0.025 
+      - Words: oeepe, onomo, tmawf
+    
+    HYPERPARAMETERS 
+      - other use baseline values
+      - learning rate: 0.025 
+      - batch size: 24 
+      - Words: ufafp, naaaa, ryaaa
+
+    HYPERPARAMETERS 
+      - hidden size: 600 
+      - learning rate: 0.023 
+      - batch size: 30 
+      - total epochs: 3
+      - log interval: 95
+      - Words: gznua, amrrb, llopo
+
+    HYPERPARAMETERS 
+      - hidden size: 612 
+      - learning rate: 0.026 
+      - batch size: 28 
+      - total epochs: 3
+      - log interval: 90
+      - Words: nwedd, adrcc, giave
+
+    HYPERPARAMETERS 
+      - hidden size: 650 
+      - learning rate: 0.024 
+      - batch size: 30 
+      - total epochs: 3
+      - log interval: 96
+      - Words: qwtgn, lhhww, ppttt
+
+    HYPERPARAMETERS 
+      - hidden size: 600 
+      - learning rate: 0.024 
+      - batch size: 30 
+      - total epochs: 3
+      - log interval: 95
+      - Words: hcrmn, hdren, lttdt

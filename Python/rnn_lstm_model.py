@@ -4,103 +4,145 @@ import torch.nn as nn
 from torch.nn.utils.rnn import pad_sequence
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
+import random
 
-# Define your RNN LSTM model architecture
+# Check if CUDA is available, else use CPU
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 class LSTMModel(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super(LSTMModel, self).__init__()
-        self.lstm = nn.LSTM(input_size, hidden_size, batch_first=True)
-        self.fc = nn.Linear(hidden_size, output_size)
+        self.lstm = nn.LSTM(input_size, hidden_size, batch_first=True, bidirectional=True) # LSTM Layer
+        self.fc = nn.Linear(hidden_size * 2, output_size) # Sync Layer
     
+    # forward pass
     def forward(self, x):
-        lstm_out, _ = self.lstm(x)
+        lstm_out, _ = self.lstm(x) # perform forward pass through lstm layer
         output = self.fc(lstm_out[:, -1])  # Use only the last output of the sequence
         return output
 
-# Define your dataset class
 class WordDataset(Dataset):
     def __init__(self, data):
         self.data = data
     
     def __len__(self):
+        # length of dataset
         return len(self.data)
     
     def __getitem__(self, idx):
-        word = self.data[idx].strip()
-        num_characters = 26 # Assuming lowercase English alphabet
-        tensor_data = torch.zeros(len(word), num_characters, dtype=torch.float32)
+        line = self.data[idx].strip().split(',') # split line into words and weights
+        word = line[::2]  # Extract letters from the line
+        weights = [int(w) for w in line[1::2]]  # Extract weights and convert to integers
+
+        # initialize tensor for data
+        tensor_data = torch.zeros(len(word), 26, dtype=torch.float32, device=device)
+
+        # iterate over chars
         for i, char in enumerate(word):
-            tensor_data[i, ord(char) - ord('a')] = 1
-        # Correctly generate the target as the next character in the sequence
-        if idx < len(self.data) - 1:
-            next_char = self.data[idx + 1][0] if len(self.data[idx + 1]) > 0 else 'a'
-            target = torch.tensor(ord(next_char) - ord('a'), dtype=torch.long)
-        else:
-            # Assuming 'a' as the default next character for the last word
-            target = torch.tensor(ord('a') - ord('a'), dtype=torch.long)
-        return tensor_data, target
+            if char != '_': # check for stub char
+                tensor_data[i, ord(char) - ord('a')] = weights[i]  # Use weight as frequency count
+        if idx < len(self.data) - 1: # check for not last word
+            next_word = self.data[idx + 1].strip().split(',')[::2] # get next word
+            next_char = next_word[0] if next_word[0] != '_' else 'a' # get next char
+
+            # set tensor target
+            target = torch.tensor(ord(next_char) - ord('a'), dtype=torch.long, device=device)
+        else: # if last word
+            target = torch.tensor(ord('a') - ord('a'), dtype=torch.long, device=device) # set target as 'a'
+        return tensor_data, target # return data and target
     
+    # static method to collate batches
     @staticmethod
     def collate_fn(batch):
-        inputs, targets = zip(*batch)
-        inputs = pad_sequence(inputs, batch_first=True)
-        targets = torch.stack(targets)
-        return inputs, targets
+        inputs, targets = zip(*batch) # unpack inputs and targets
+        inputs = pad_sequence(inputs, batch_first=True) # pad sequences in batch
+        targets = torch.stack(targets) # stack the targets
+        return inputs, targets # return collated inputs and targets
 
-# Define your training function
-def train(model, train_loader, criterion, optimizer, num_epochs):
-    for epoch in range(num_epochs):
-        for batch_idx, (inputs, targets) in enumerate(train_loader):
-            optimizer.zero_grad()
-            outputs = model(inputs)
-            loss = criterion(outputs, targets)
-            loss.backward()
-            optimizer.step()
-            if batch_idx % log_interval == 0:
-                print(f"Epoch {epoch + 1}, Batch {batch_idx + 1}/{len(train_loader)}, Loss: {loss.item()}")
+# hyperparameters 5 letter dict
+input_size = 26       # dimensionality of input data
+hidden_size = 600     # size of hidden state in LSTM
+output_size = 26      # dimensionality of output data
+learning_rate = 0.013 # learning rate for optimization
+batch_size = 32       # batch size for training
+num_epochs = 5       # num of training gens
+log_interval = 95     # log interval for training
 
+# # hyperparameters 20 letter dict
+# input_size = 26       # dimensionality of input data
+# hidden_size = 256     # size of hidden state in LSTM
+# output_size = 26      # dimensionality of output data
+# learning_rate = 0.050 # learning rate for optimization
+# batch_size = 40       # batch size for training
+# num_epochs = 5       # num of training gens
+# log_interval = 600     # log interval for training
 
-# Define hyperparameters
-input_size = 26 # Define based on your features
-hidden_size = 512 # Define based on your model complexity
-output_size = 26 # Define based on your output dimension
-learning_rate = 0.001
-batch_size = 32
-num_epochs = 30
-log_interval = 100
+# read file data
+data = open("../Training Files/5_letter_frequency_list_padded_comma_sep.txt", "r").readlines() 
+dataset = WordDataset(data) # create dataset
+train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, collate_fn=dataset.collate_fn) # create data loader
 
-# Prepare your data and create DataLoader
-data = open("../Output/5_letter_dict.txt", "r").readlines()
-dataset = WordDataset(data)
-train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, collate_fn=dataset.collate_fn)
-
-# Define your model, loss function, and optimizer
+# start lstm model
 model = LSTMModel(input_size, hidden_size, output_size)
-criterion = nn.CrossEntropyLoss()
+model.to(device)
+
+# set loss function and optimizer
+criterion = nn.CrossEntropyLoss(ignore_index=0)
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-# Train your model
-train(model, train_loader, criterion, optimizer, num_epochs)
+# training function
+def train(model, train_loader, criterion, optimizer, num_epochs):
+    model.train() # Set the model to training mode
+    for epoch in range(num_epochs): # iterate over epochs
+        for batch_idx, (inputs, targets) in enumerate(train_loader): # iterate over batches
+            optimizer.zero_grad() # zero gradients
+            inputs, targets = inputs.to(device), targets.to(device) # move inputs, targets to gpu
+            outputs = model(inputs) # forward pass
+            loss = criterion(outputs, targets) # compute loss
+            loss.backward() # backward pass
+            optimizer.step() # update parameters
 
-# Once trained, use the model to generate new words
-# Example: seed_input = torch.tensor([your_seed_input], dtype=torch.float32)
+            # display the loss
+            if batch_idx % log_interval == 0:
+                print(f"Epoch {epoch + 1}, Batch {batch_idx + 1}/{len(train_loader)}, Loss: {loss.item()}")
+        
+        # Generate a word after each epoch
+        generated_word = generate_word(model, seed_input, 5)
+        print(f"\nGenerated word after epoch {epoch + 1}: {generated_word}\n")
+
+# input used to generate a word
 seed_input = torch.zeros(1, 1, input_size)
-output = model(seed_input)
 
 # Use the output to generate new words
 def generate_word(model, seed_input, length):
     model.eval()  # Set the model to evaluation mode
     word = ''
-    for _ in range(length):
-        output = model(seed_input)
-        probabilities = F.softmax(output, dim=1)
-        _, predicted = torch.max(probabilities, 1)
-        next_char = chr(predicted.item() + ord('a'))
-        word += next_char
-        # Prepare the next input. The new input is the one-hot encoding of the predicted character
-        seed_input = torch.zeros(1, 1, 26)
-        seed_input[0, 0, predicted.item()] = 1
+    for _ in range(length): # generate word of specified length
+        output = model(seed_input) # forward pass
+
+        # calculate probabilities
+        probabilities = F.softmax(output, dim=1).squeeze().detach().cpu().numpy()
+
+        # choose next string index
+        next_char_index = random.choices(range(len(probabilities)), probabilities)[0]
+        
+        # Convert the index to a character
+        next_char = chr(next_char_index + ord('a'))
+        
+        word += next_char # append char to word
+        seed_input = torch.zeros(1, 1, 26, device=device) # prepare next input 
+        seed_input[0, 0, next_char_index] = 1 # set next input character
     return word
 
-# Generate a word of length 5
-print(generate_word(model, seed_input, 5))
+# display set hyperparameters used
+print(f"""
+    HYPERPARAMETERS 
+      - hidden size: {hidden_size} 
+      - learning rate: {learning_rate} 
+      - batch size: {batch_size} 
+      - total epochs: {num_epochs}
+      - log interval: {log_interval}
+      """)
+
+# Train the model
+train(model, train_loader, criterion, optimizer, num_epochs)

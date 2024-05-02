@@ -48,10 +48,23 @@ def write_numerical_output(file_path, numerical_output):
                 # add commas between numerical representation of letters
                 file.write(',')
 
+# create a dictionary with words of n size
+
+def word_size_n_dict(word_size):
+    with open("../Training Files/words_alpha.txt", "r") as file_in:
+        lines = file_in.readlines()
+    
+    with open(f"../Output/{word_size}_letter_dict.txt", "w") as file_out:
+        for line in lines:
+            word = line.strip()
+            if len(word) <= word_size:
+                file_out.write(word + "\n")
+
 # main function
 if __name__ == "__main__":
     input_file = "/content/sample_data/5_letter_dict.txt"  # Replace with your input file name
     output_file = "/content/sample_data/numerical_dict.txt"  # Replace with your output file name
 
-    numerical_output = words_to_numerical_list(input_file)
-    write_numerical_output(output_file, numerical_output)
+    # numerical_output = words_to_numerical_list(input_file)
+    # write_numerical_output(output_file, numerical_output)
+    word_size_n_dict(20)
