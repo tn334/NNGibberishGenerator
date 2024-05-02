@@ -502,12 +502,15 @@ Generated word after epoch 50: kuunk
 
 
 15 words accepted
-moewa, fuhpz, laizt, nyqoo, lewbd, yoyqe, ikuns, jyyff, eaapn, weauv, tulot, vruak, hydvu, inklb, kuunk
+moewa, fuhpz, laizt, nyqoo, lewbd, yoyqe, ikuns, 
+jyyff, eaapn, weauv, tulot, vruak, hydvu, inklb,
+kuunk
 
 1 word maybe
 enekw
 
 34 words not accepted
-kxypa, bniab, hmywu, inwpg, kkjgb, ucxka, hpwvb, vlxbu, uwgrs, xtuzn, fihwc, ecfhk, zwizj, mbagm, ohfzb, hggid, 
-ulqmp, rszfs, sucml, nuqcc, eagfb, rxihh, pklry, tscbl, zkdai, ftkwf, aydpm, rmxkf, vfwvw, mnhhv, uevnc, cvtog, 
-jmeeu, apwfv
+kxypa, bniab, hmywu, inwpg, kkjgb, ucxka, hpwvb, vlxbu, uwgrs, 
+xtuzn, fihwc, ecfhk, zwizj, mbagm, ohfzb, hggid, ulqmp, rszfs, 
+sucml, nuqcc, eagfb, rxihh, pklry, tscbl, zkdai, ftkwf, aydpm, 
+rmxkf, vfwvw, mnhhv, uevnc, cvtog, jmeeu, apwfv
