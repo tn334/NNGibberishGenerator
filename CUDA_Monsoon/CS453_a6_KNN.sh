@@ -21,10 +21,10 @@ NAME=CS453_a6_KNN
 # program defined constants
 
 #N=7490
-DIM=9
-FILENAME=5_letter_frequency_list_padded_comma_sep.txt
-NUMNEIGHBORS=10
-N=19599
+DIM=39 #9
+FILENAME=20_letter_frequency_list_padded_comma_sep.txt #5_letter_frequency_list_padded_comma_sep.txt
+#NUMNEIGHBORS=7
+N=282378 #19599
 BLOCKSIZE=128
 
 
@@ -44,14 +44,14 @@ for MODE in 0 # 2 3 4 5 6 7 8
 do
 	for WIDTH in 90
 	do
-		for HEIGHT in 107
+		for NUMNEIGHBORS in 3 5
 		do
 			nvcc -O3 -arch=compute_$CC -code=sm_$CC -DBLOCKSIZE=$BLOCKSIZE -DMODE=$MODE -lcuda -lineinfo -diag-suppress 186 -Wno-deprecated-gpu-targets -Xcompiler -fopenmp $NAME.cu -o $NAME.exe
 		
 			#3 time trials
 			for i in 1 #2 3
 			do
-				echo "Mode: $MODE, Blocksize: $BLOCKSIZE, Trial: $i"
+				echo "Mode: $MODE, Number of Neighbors: $BLOCKSIZE, Trial: $i"
 				srun ./$NAME.exe $N $DIM $NUMNEIGHBORS $FILENAME
 			
 				#declare timeTrial$i=$(srun ./$NAME.exe $N $DIM $EPSILON $FILENAME | sed -n 's/Total time: //p')

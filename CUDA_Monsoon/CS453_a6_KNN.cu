@@ -1,5 +1,6 @@
 //example of running the program: ./A5_similarity_search_starter 7490 5 10 bee_dataset_1D_feature_vectors.txt
 
+#include <curand.h>
 #include <time.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -24,13 +25,13 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 //Define any constants here
 //Feel free to change BLOCKSIZE
 //#define BLOCKSIZE 128
-//#define DEFAULT_FILL 1000.0
+#define DEFAULT_FILL 50.0
+#define DEFAULT_MIN 1000000000.0
 
 using namespace std;
 
 //function prototypes
 //Some of these are for debugging so I did not remove them from the starter file
-void importDataset();
 
 void printDataset();
 
@@ -42,9 +43,9 @@ void importDataset(char * fname, unsigned int N, unsigned int DIM, float * datas
 
 void computeDistanceArrayCPU(float * dataset, unsigned int N, unsigned int DIM, const int NEARESTNEIGHBORS);
 
-void calcKNN(float * distanceArray, const int NEARESTNEIGHBORS, unsigned int N, float *KNNSet );
+void calcKNN(float * distanceArray, const int NEARESTNEIGHBORS, unsigned int N, int *KNNSet, const int DIM );
 
-bool selectRandomNeighbor(float * dataset, float * newWordArray, float * KNNSet, const int freqLocation, const int NEARESTNEIGHBORS, const int DIM);
+bool selectRandomNeighbor(float * dataset, float * newWordArray, int * KNNSet, const int freqLocation, const int NEARESTNEIGHBORS, const int DIM);
 
 void decodeWord(float * newWordArray, int DIM);
 
@@ -54,10 +55,13 @@ void calcDistanceArrayCPU(float * dataset, float * distanceArray, float * newWor
 
 int translateLetter(char letterToTranslate);
 
+int translateLetterSequel(char letterToTranslate);
 
 //Part 1: Computing the distance matrix 
 
 //Baseline kernel --- one thread per point/feature vector
+__global__ void generateRandomNumbers(float *numbers);
+
 //__global__ void distanceMatrixBaseline(float * dataset, float * distanceMatrix, const unsigned int N, const unsigned int DIM);
 
 //Part 2: querying the distance matrix
@@ -77,7 +81,7 @@ int main(int argc, char *argv[])
   unsigned int N=0;
   unsigned int DIM=0;
   unsigned int NUMNEIGHBORS = 0;
-  float epsilon=0;
+  //float epsilon=0;
 
   if (argc != 5) {
     fprintf(stderr,"Please provide the following on the command line: N (number of lines in the file), dimensionality (number of coordinates per point), number of neighbors, dataset filename.\n");
@@ -87,6 +91,8 @@ int main(int argc, char *argv[])
   sscanf(argv[1],"%d",&N);
   sscanf(argv[2],"%d",&DIM);
   sscanf(argv[3],"%d",&NUMNEIGHBORS);
+  printf("N: %d\n", N);
+  printf("DIM: %d\n", DIM);
   printf("Number of neighbors: %d\n", NUMNEIGHBORS);
   strcpy(inputFname,argv[4]);
 
@@ -96,7 +102,7 @@ int main(int argc, char *argv[])
   //printf("\nAllocating the following amount of memory for the distance matrix: %f GiB", (sizeof(float)*N*N)/(1024*1024*1024.0));
   
 
-  float * dataset=(float*)malloc(sizeof(float*)*N*DIM);
+  float * dataset=(float*)malloc(sizeof(float*)*DIM*N);
   importDataset(inputFname, N, DIM, dataset);
 
 
@@ -106,10 +112,14 @@ int main(int argc, char *argv[])
   //CPU-only mode
   //It only computes the distance matrix but does not query the distance matrix
   if(MODE==0){
+    // generate 100 words
+    double tstart = omp_get_wtime();
     for (int index = 0; index < 100; index++)
     {
       computeDistanceArrayCPU( dataset, N, DIM, NUMNEIGHBORS);
     }
+    double tend = omp_get_wtime();
+    printf("\nTime to compute distance matrix on the CPU: %f", tend - tstart);
     //printf("\nReturning after computing on the CPU");
     //return(0);
   }
@@ -258,7 +268,8 @@ void importDataset(char * fname, unsigned int N, unsigned int DIM, float * datas
           }   
 
         }
-        /*printf("\n");
+        /*
+        printf("\n");
         for (int i =0; i < DIM; i++)
         {
           printf("%f ", dataset[rowCnt*DIM+i]);
@@ -290,7 +301,7 @@ void checkParams(unsigned int N, unsigned int DIM)
   }
 }
 
-
+// Dependencies: translateLetter(), calcDistanceArrayCPU, calcKNN, selectRandomNeighbor
 void computeDistanceArrayCPU(float * dataset, unsigned int N, unsigned int DIM, const int NUMNEIGHBORS)
 {
   // distance array holds location values for comparison between our word and all stored words AKA N
@@ -298,83 +309,111 @@ void computeDistanceArrayCPU(float * dataset, unsigned int N, unsigned int DIM, 
   float * newWordArray = (float*)malloc(sizeof(float)*DIM); // random letter selected from a-z
   int newWordIdx = 1;
   float encodedLetter;
-  float nextEncodedLetter;
+  //float nextEncodedLetter;
   double tstart = omp_get_wtime();
-  float KNNSet[NUMNEIGHBORS];
+  int KNNSet[NUMNEIGHBORS];
 
+ // loop through all values of KNN
   for (int i = 0; i < NUMNEIGHBORS; i++)
   {
-    KNNSet[i] = 100000000.0;
+    KNNSet[i] = 0;
   }
 
   // input random letter to 0 index 
-  char randomLetter = 'a' + rand() % 26;
+  // grab a random first letter from the dataset to match
+  // the frequency of letters to begin words
+  // rand % N gives some value to indicate our row, *DIM to jump to the correct row, + 0 to incidate first letter
+  encodedLetter =  dataset[(rand() % N)*DIM + 0];
+  //char randomLetter = (rand() % 26);
   
   //translate randomLetter to int
-  encodedLetter = (float)translateLetter(randomLetter);
+  //encodedLetter = (float)translateLetter(randomLetter);
 
-  // 
+  // loop through new word creation
   for(int index = 0; index < DIM; index++)
   {
+    //check if at beginning of word, add random letter
     if(index == 0)
     {
       newWordArray[index] = encodedLetter;
     }
+    // check if at even index to add letter 
+    else if(index % 2 == 0)
+    {
+      //newWordArray[index] = (float)(rand() % 26);
+      //
+      newWordArray[index] = (float)(rand() % 20);
+    }
+    // process frequencies
     else
     {
       // append '-1' to all other slots
       //newWordArray[index] = DEFAULT_FILL;
-      newWordArray[index] = (float)(rand() % 26);
+      newWordArray[index] = (float)(rand() % DIM - index);
     }
   }
 
   //Write code here
   bool wordEnd = false;
-  for (newWordIdx = 1; newWordIdx < DIM && !wordEnd; newWordIdx += 2)
+  for (newWordIdx = 1; newWordIdx < DIM && !wordEnd; newWordIdx++)
   {
-  // LOOP THROUGH NEW WORD GEN use 
-  calcDistanceArrayCPU(dataset, distanceArray, newWordArray, N, DIM, newWordIdx);
+    // LOOP THROUGH NEW WORD GEN use 
+    //printf("Attempt to enter calcDistanceArrayCPU\n\n");
+    calcDistanceArrayCPU(dataset, distanceArray, newWordArray, N, DIM, newWordIdx);
 
-  // KNN function thingy takes distArr, nnearestneighbors, N
-  calcKNN(distanceArray, NUMNEIGHBORS, N, KNNSet );
+    // KNN function thingy takes distArr, nnearestneighbors, N
+    //printf("Made it past calcDistanceArrayCPU\n\n");
+    calcKNN(distanceArray, NUMNEIGHBORS, N, KNNSet, DIM);
 
-  // Call function to select a random neighbor from the set of K closest neighbors
-  // If the random neighbor selected is _, then fill up the rest of the word with _ and end the word
-  wordEnd = selectRandomNeighbor(dataset, newWordArray, KNNSet, newWordIdx, NUMNEIGHBORS, DIM);
+    // print out words that correspond to the KNN idx Match
+    /*for(int word = 0; word < NUMNEIGHBORS; word++)
+    {
+      int wordRowIdx = KNNSet[word];
+      float neighbor[DIM];
+      for (int index = 0; index < DIM; index++)
+      {
+        neighbor[index] = dataset[wordRowIdx + index];
+      }
+      decodeWord(neighbor, DIM);
+    }*/
+
+    // Call function to select a random neighbor from the set of K closest neighbors
+    // If the random neighbor selected is _, then fill up the rest of the word with _ and end the word
+    wordEnd = selectRandomNeighbor(dataset, newWordArray, KNNSet, newWordIdx, NUMNEIGHBORS, DIM);
 
   }
-  double tend = omp_get_wtime();
+
 
   decodeWord(newWordArray, DIM);
-
-    
-  //printf("\nTime to compute distance matrix on the CPU: %f", tend - tstart);
 
   free(newWordArray);
   free(distanceArray);
 }
 
-void calcKNN(float * distanceArray, const int NEARESTNEIGHBORS, unsigned int N, float *KNNSet )
+void calcKNN(float * distanceArray, const int NEARESTNEIGHBORS, unsigned int N, int *KNNSet, const int DIM )
 {
-  float currentMin = 100000000.0;
+  float currentMin;
   // loop through distanceArray for NEARESTNEIGHBORS iterations
-  for(int neighbor = 0; neighbor < NEARESTNEIGHBORS; neighbor++)
+  //loop from 0 to NEARESTNEIGHBORS
+  for(int neighborIdx = 0; neighborIdx < NEARESTNEIGHBORS; neighborIdx++)
   {
-    currentMin = 100000000.0;
-    for(int idx = N-1; idx >= 0; idx--)
+    // set currentMin
+    currentMin = DEFAULT_MIN; //1000000000.0
+    // Check each distance value in distanceArr
+    for(int idx = 0; idx < N; idx++)
     {
-        //find min
-        if(distanceArray[idx] <= currentMin)
+        // Check if value at distanceArr[idx] is new min
+        if(distanceArray[idx] < currentMin)
         {
           //check if not on first iteration of distArr loop
-          if(neighbor != 0)
+          if(neighborIdx != 0)
           {
             bool neighborAlreadyAdded = false;
             // loop through already saved values in KNNSet
-            for(int counter = 1; counter < neighbor; counter++)
+            for(int counter = 0; counter < neighborIdx; counter++)
             {
               //check if idx already used as a min value
-              if(idx == KNNSet[counter])
+              if(idx*DIM == KNNSet[counter])
               {
                 // check if idx has already been used
                 neighborAlreadyAdded = true;
@@ -384,14 +423,14 @@ void calcKNN(float * distanceArray, const int NEARESTNEIGHBORS, unsigned int N, 
             if(!neighborAlreadyAdded)
             {
               // set val of idx in KNNSet to idx of min val in distArr
-              KNNSet[neighbor] = idx;
+              KNNSet[neighborIdx] = idx*DIM;
             }
           }
           // on first loop of KNN
           else
           {
             // if first loop assign
-            KNNSet[neighbor] = idx;
+            KNNSet[neighborIdx] = idx*DIM;
           }
           //update current min to new min value
           currentMin = distanceArray[idx];
@@ -400,48 +439,59 @@ void calcKNN(float * distanceArray, const int NEARESTNEIGHBORS, unsigned int N, 
   }
 }
 
-void calcDistanceArrayCPU(float * dataset, float * distanceArr, float * newWordArr, const unsigned int N, const unsigned int DIM, const int workingLetterIndex)
+void calcDistanceArrayCPU(float * dataset, float * distanceArray, float * newWordArr, const unsigned int N, const unsigned int DIM, const int workingLetterIndex)
 {
     //write code here
     int row = 0;
     int wordIdx = 0;
-    float totalDistSquared = 0;
-    float totalDist = 0;
+    float totalDistSquared = 0.0;
+    float totalDist;
 
     // loop through columns
     for(row = 0; row < N; row++)
     {
-      totalDist = 0.0;
+      totalDistSquared = 0.0;
       //for(wordIdx = 0; wordIdx < DIM; wordIdx++)
-      for(wordIdx = workingLetterIndex-1; wordIdx < workingLetterIndex + 1; wordIdx++)
+      for(wordIdx = 0; wordIdx < workingLetterIndex + 1; wordIdx++)
       {
         totalDistSquared += (newWordArr[wordIdx]- dataset[(row * DIM )+ wordIdx]) * (newWordArr[wordIdx]-dataset[(row * DIM) + wordIdx]);
       }
       // take the sqrtf
       totalDist = sqrt(totalDistSquared);
       //then add to distanceArr
-      distanceArr[row] = totalDist;
+      distanceArray[row] = totalDist;
     }
 }
 
-bool selectRandomNeighbor(float * dataset, float * newWordArray, float * KNNSet, const int freqLocation, const int NEARESTNEIGHBORS, const int DIM)
+bool selectRandomNeighbor(float * dataset, float * newWordArray, int * KNNSet, const int newLocation, const int NUMNEIGHBORS, const int DIM)
 {
   bool wordEnd = false;
-  int randomNeighbor = rand() % NEARESTNEIGHBORS;
+  // get random neighbor between 0 and 9
+  int randomNeighbor = rand() % NUMNEIGHBORS;
 
-  int letterLocation = freqLocation + 1;
+  //int letterLocation = freqLocation + 1;
+  // get index of next word from KNNSet
+  /*for (int i =0; i < NUMNEIGHBORS; i++)
+  {
+    printf("KNN value at index %d: %d\n", i, KNNSet[i]);
+  }*/
 
-  float newFreq = dataset[randomNeighbor*DIM + freqLocation];
-  float newLetter = dataset[randomNeighbor*DIM + letterLocation];
+  int datasetIndex = KNNSet[randomNeighbor];
+
+  //printf("\nAttempt to access index %d in dataset (%d + %d).\n", datasetIndex + newLocation, datasetIndex, newLocation);
+  
+  float newValue = dataset[datasetIndex + newLocation];
+  //float newLetter = dataset[randomNeighbor*DIM + letterLocation];
 
 
-  newWordArray[freqLocation] = newFreq;
-  newWordArray[letterLocation] = newLetter;
-  if ((int)newLetter == 12) {
+  newWordArray[newLocation] = newValue;
+  //newWordArray[letterLocation] = newLetter;
+  if (newLocation % 2 == 0 && (int)newValue == 12) {
     wordEnd = true;
-    for (int i = letterLocation; i < DIM; i++)
+    // If word has received '_' then pad out the rest of the word with '_'
+    for (int i = newLocation; i < DIM; i++)
     {
-      newWordArray[i] = 12.0;
+      newWordArray[i] = 12.0; // 12.0 represents '_' when decoded
     }
   }
 
@@ -452,7 +502,7 @@ bool selectRandomNeighbor(float * dataset, float * newWordArray, float * KNNSet,
 void decodeWord(float * newWordArray, int DIM)
 {
   printf("\n");
-  int letterIndex = 13;
+  int letterIndex = -1;
   char decodeArray[27] = {'e', 't', 'a', 'o', 'i', 'n', 's',
                           'h', 'r', 'd', 'l', 'c', '_', 'u',
                           'm', 'w', 'f', 'g', 'y', 'p', 'b',
@@ -601,6 +651,95 @@ int translateLetter(char letterToTranslate)
     return numToReturn;
 }
 
+int translateLetterSequel(char letterToTranslate)
+{
+    int numToReturn = -1;
+    switch (letterToTranslate)
+    {
+        case 'e':
+            numToReturn = 0;
+            break;
+        case 't':
+            numToReturn = 1;
+            break;
+        case 'a':
+            numToReturn = 2;
+            break;
+        case 'o':
+            numToReturn = 3;
+            break;
+        case 'i':
+            numToReturn = 4;
+            break;
+        case 'n':
+            numToReturn = 5;
+            break;
+        case 's':
+            numToReturn = 6;
+            break;
+        case 'h':
+            numToReturn = 7;
+            break;
+        case 'r':
+            numToReturn = 8;
+            break;
+        case 'd':
+            numToReturn = 9;
+            break;
+        case 'l':
+            numToReturn = 10;
+            break;
+        case 'c':
+            numToReturn = 11;
+            break;
+        case 'u':
+            numToReturn = 12;
+            break;
+        case 'm':
+            numToReturn = 13;
+            break;
+        case 'w':
+            numToReturn = 14;
+            break;
+        case 'f':
+            numToReturn = 15;
+            break;
+        case 'g':
+            numToReturn = 16;
+            break;
+        case 'y':
+            numToReturn = 17;
+            break;
+        case 'p':
+            numToReturn = 18;
+            break;
+        case 'b':
+            numToReturn = 19;
+            break;
+        case 'v':
+            numToReturn = 20;
+            break;
+        case 'k':
+            numToReturn = 21;
+            break;
+        case 'j':
+            numToReturn = 22;
+            break;
+        case 'x':
+            numToReturn = 23;
+            break;
+        case 'q':
+            numToReturn = 24;
+            break;
+        case 'z':
+            numToReturn = 25;
+            break;
+        case '_':
+            numToReturn = 26;
+            break;
+    }
+    return numToReturn;
+}
 
 //Query distance matrix with one thread per feature vector
 /*Once the distance matrix has been constructed, it can be queried one or
@@ -611,6 +750,13 @@ whether dist(p0, p1) <= epsilon, and if so, count the number of instances for ea
 array that will be returned to the host. Figure 4 shows an example of the array that will be returned
 to the host. You will add the elements in this array on the host to determine the total number of
 instances that points were within epsilon of each other. */
+
+//BEGIN GPU CODE
+__global__ void generateRandomNumbers(float *numbers)
+{
+  int tid = threadIdx.x + blockIdx.x * blockDim.x;
+  
+}
 
 /*
 __global__ void queryDistanceMatrixBaseline(float * distanceMatrix, const unsigned int N, const unsigned int DIM, const float epsilon, unsigned int * resultSet)
