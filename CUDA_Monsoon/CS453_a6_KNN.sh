@@ -25,7 +25,8 @@ DIM=39 #9
 FILENAME=20_letter_frequency_list_padded_comma_sep.txt #5_letter_frequency_list_padded_comma_sep.txt
 #NUMNEIGHBORS=7
 N=282378 #19599
-BLOCKSIZE=128
+BLOCKSIZE=64
+WORDSTOGENERATE=100
 
 
 #make sure not to redefine MODE, N, etc. in the source file
@@ -44,9 +45,9 @@ for MODE in 0 # 2 3 4 5 6 7 8
 do
 	for WIDTH in 90
 	do
-		for NUMNEIGHBORS in 3 5
+		for NUMNEIGHBORS in 1 2 3 4 5
 		do
-			nvcc -O3 -arch=compute_$CC -code=sm_$CC -DBLOCKSIZE=$BLOCKSIZE -DMODE=$MODE -lcuda -lineinfo -diag-suppress 186 -Wno-deprecated-gpu-targets -Xcompiler -fopenmp $NAME.cu -o $NAME.exe
+			nvcc -O3 -arch=compute_$CC -code=sm_$CC -DBLOCKSIZE=$BLOCKSIZE -DMODE=$MODE -DWORDSTOGENERATE=$WORDSTOGENERATE -lcuda -lineinfo -diag-suppress 186 -Wno-deprecated-gpu-targets -Xcompiler -fopenmp $NAME.cu -o $NAME.exe
 		
 			#3 time trials
 			for i in 1 #2 3

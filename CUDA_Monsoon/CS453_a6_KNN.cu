@@ -60,7 +60,7 @@ int translateLetterSequel(char letterToTranslate);
 //Part 1: Computing the distance matrix 
 
 //Baseline kernel --- one thread per point/feature vector
-__global__ void generateRandomNumbers(float *numbers);
+__device__ int generateRandomNumbers(int startIdx, int endIdx);
 
 //__global__ void distanceMatrixBaseline(float * dataset, float * distanceMatrix, const unsigned int N, const unsigned int DIM);
 
@@ -114,45 +114,43 @@ int main(int argc, char *argv[])
   if(MODE==0){
     // generate 100 words
     double tstart = omp_get_wtime();
-    for (int index = 0; index < 100; index++)
+    for (int index = 0; index < WORDSTOGENERATE; index++)
     {
       computeDistanceArrayCPU( dataset, N, DIM, NUMNEIGHBORS);
     }
     double tend = omp_get_wtime();
     printf("\nTime to compute distance matrix on the CPU: %f", tend - tstart);
-    //printf("\nReturning after computing on the CPU");
-    //return(0);
+    printf("\nReturning after computing on the CPU");
+    return(0);
   }
-  /*
+  
 
   double tstart=omp_get_wtime();
 
   //Allocate memory for the dataset
   float * dev_dataset;
-  gpuErrchk(cudaMalloc((float**)&dev_dataset, sizeof(float)*N*DIM));
-  gpuErrchk(cudaMemcpy(dev_dataset, dataset, sizeof(float)*N*DIM, cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMalloc((float**)&dev_dataset, sizeof(float)*DIM*N));
+  gpuErrchk(cudaMemcpy(dev_dataset, dataset, sizeof(float)*DIM*N, cudaMemcpyHostToDevice));
 
   //For part 1 that computes the distance matrix
-  float * dev_distanceMatrix;
-  gpuErrchk(cudaMalloc((float**)&dev_distanceMatrix, sizeof(float)*N*N));
+  //float * dev_distanceMatrix;
+  //gpuErrchk(cudaMalloc((float**)&dev_distanceMatrix, sizeof(float)*N*N));
   
 
   //For part 2 for querying the distance matrix
-  unsigned int * resultSet = (unsigned int *)calloc(N, sizeof(unsigned int));
+  unsigned int * resultSet = (float *)calloc(WORDSTOGENERATE*N, sizeof(float));
   unsigned int * dev_resultSet;
-  gpuErrchk(cudaMalloc((unsigned int**)&dev_resultSet, sizeof(unsigned int)*N));
-  gpuErrchk(cudaMemcpy(dev_resultSet, resultSet, sizeof(unsigned int)*N, cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMalloc((float**)&dev_resultSet, sizeof(float)*N));
+  gpuErrchk(cudaMemcpy(dev_resultSet, resultSet, sizeof(float)*N, cudaMemcpyHostToDevice));
 
   
   //Baseline kernels
   if(MODE==1){
   // Optimization set 1: baseline of both kernels
   unsigned int BLOCKDIM = BLOCKSIZE; 
-  unsigned int NBLOCKS = ceil(N*1.0/BLOCKDIM);
+  unsigned int NBLOCKS = NUMWORDSTOGENERATE*1.0;
   //Part 1: Compute distance matrix
-  distanceMatrixBaseline<<<NBLOCKS, BLOCKDIM>>>(dev_dataset, dev_distanceMatrix, N, DIM);
-  //Part 2: Query distance matrix
-  queryDistanceMatrixBaseline<<<NBLOCKS,BLOCKDIM>>>(dev_distanceMatrix, N, DIM, epsilon, dev_resultSet);
+  generateWordsBaseline<<<NBLOCKS, BLOCKDIM>>>(dev_dataset, dev_distanceMatrix, N, DIM);
   }
 
 
@@ -189,7 +187,7 @@ int main(int argc, char *argv[])
   gpuErrchk(cudaFree(dev_dataset));
   gpuErrchk(cudaFree(dev_distanceMatrix));
   gpuErrchk(cudaFree(dev_resultSet));
-  */
+  
   free(dataset);
 
   printf("\n\n");
@@ -349,7 +347,7 @@ void computeDistanceArrayCPU(float * dataset, unsigned int N, unsigned int DIM, 
     {
       // append '-1' to all other slots
       //newWordArray[index] = DEFAULT_FILL;
-      newWordArray[index] = (float)(rand() % DIM - index);
+      newWordArray[index] = (float)(rand() % 10 + index);
     }
   }
 
@@ -752,9 +750,14 @@ to the host. You will add the elements in this array on the host to determine th
 instances that points were within epsilon of each other. */
 
 //BEGIN GPU CODE
-__global__ void generateRandomNumbers(float *numbers)
+__device__ int generateRandomNumber(int startIdx, int endIdx)
 {
   int tid = threadIdx.x + blockIdx.x * blockDim.x;
+
+  curandState state;
+  //curand_init(42, tid, 0, &state);
+
+
   
 }
 
