@@ -41,7 +41,7 @@ void checkParams(unsigned int N, unsigned int DIM);
 
 void importDataset(char * fname, unsigned int N, unsigned int DIM, float * dataset);
 
-void computeDistanceArrayCPU(float * dataset, unsigned int N, unsigned int DIM, const int NEARESTNEIGHBORS);
+void generateWordsCPU(float * dataset, unsigned int N, unsigned int DIM, const int NEARESTNEIGHBORS);
 
 void calcKNN(float * distanceArray, const int NEARESTNEIGHBORS, unsigned int N, int *KNNSet, const int DIM );
 
@@ -60,10 +60,15 @@ int translateLetterSequel(char letterToTranslate);
 //Part 1: Computing the distance matrix 
 
 //Baseline kernel --- one thread per point/feature vector
-__device__ int generateRandomNumbers(int startIdx, int endIdx);
+__device__ float generateRandomNumbers(int startIdx, int endIdx);
 
-//__global__ void distanceMatrixBaseline(float * dataset, float * distanceMatrix, const unsigned int N, const unsigned int DIM);
+__global__ void generateWordsBaseline(float * dataset, float * distanceArray, const unsigned int N, const unsigned int DIM);
 
+__device__ calcKNNGPU(float * distanceArray, const int NEARESTNEIGHBORS, unsigned int N, int *KNNSet, const int DIM);
+__device__ selectRandNeighborGPU(float * dataset, float * newWordArray, int * KNNSet, const int freqLocation, const int NEARESTNEIGHBORS, const int DIM);
+__device__ decodeWordGPU(float * newWordArray, int DIM);
+__device__ translateLetterGPU(char letterToTranslate);
+__device__ calcDistanceArrayGPU(float * dataset, float * distanceArray, float * newWordArray, const unsigned int N, const unsigned int DIM, const int wordIndex);
 //Part 2: querying the distance matrix
 //__global__ void queryDistanceMatrixBaseline(float * distanceMatrix, const unsigned int N, const unsigned int DIM, const float epsilon, unsigned int * resultSet);
 
@@ -107,8 +112,6 @@ int main(int argc, char *argv[])
 
 
 
-
-
   //CPU-only mode
   //It only computes the distance matrix but does not query the distance matrix
   if(MODE==0){
@@ -116,7 +119,7 @@ int main(int argc, char *argv[])
     double tstart = omp_get_wtime();
     for (int index = 0; index < WORDSTOGENERATE; index++)
     {
-      computeDistanceArrayCPU( dataset, N, DIM, NUMNEIGHBORS);
+      generateWordsCPU( dataset, N, DIM, NUMNEIGHBORS);
     }
     double tend = omp_get_wtime();
     printf("\nTime to compute distance matrix on the CPU: %f", tend - tstart);
@@ -132,9 +135,9 @@ int main(int argc, char *argv[])
   gpuErrchk(cudaMalloc((float**)&dev_dataset, sizeof(float)*DIM*N));
   gpuErrchk(cudaMemcpy(dev_dataset, dataset, sizeof(float)*DIM*N, cudaMemcpyHostToDevice));
 
-  //For part 1 that computes the distance matrix
-  //float * dev_distanceMatrix;
-  //gpuErrchk(cudaMalloc((float**)&dev_distanceMatrix, sizeof(float)*N*N));
+  //For part 1 that computes the distance Array
+  float * dev_distanceArray;
+  gpuErrchk(cudaMalloc((float**)&dev_distanceArray, sizeof(float)*N));
   
 
   //For part 2 for querying the distance matrix
@@ -150,7 +153,7 @@ int main(int argc, char *argv[])
   unsigned int BLOCKDIM = BLOCKSIZE; 
   unsigned int NBLOCKS = NUMWORDSTOGENERATE*1.0;
   //Part 1: Compute distance matrix
-  generateWordsBaseline<<<NBLOCKS, BLOCKDIM>>>(dev_dataset, dev_distanceMatrix, N, DIM);
+  generateWordsBaseline<<<NBLOCKS, BLOCKDIM>>>(dev_dataset, dev_distanceArray, N, DIM);
   }
 
 
@@ -185,7 +188,7 @@ int main(int argc, char *argv[])
 
   //Free memory here
   gpuErrchk(cudaFree(dev_dataset));
-  gpuErrchk(cudaFree(dev_distanceMatrix));
+  gpuErrchk(cudaFree(dev_distanceArray));
   gpuErrchk(cudaFree(dev_resultSet));
   
   free(dataset);
@@ -282,7 +285,6 @@ void importDataset(char * fname, unsigned int N, unsigned int DIM, float * datas
 }
 
 
-
 void warmUpGPU(){
 printf("\nWarming up GPU for time trialing...\n");
 cudaDeviceSynchronize();
@@ -300,7 +302,7 @@ void checkParams(unsigned int N, unsigned int DIM)
 }
 
 // Dependencies: translateLetter(), calcDistanceArrayCPU, calcKNN, selectRandomNeighbor
-void computeDistanceArrayCPU(float * dataset, unsigned int N, unsigned int DIM, const int NUMNEIGHBORS)
+void generateWordsCPU(float * dataset, unsigned int N, unsigned int DIM, const int NUMNEIGHBORS)
 {
   // distance array holds location values for comparison between our word and all stored words AKA N
   float * distanceArray = (float*)malloc(sizeof(float)*N);
@@ -338,8 +340,7 @@ void computeDistanceArrayCPU(float * dataset, unsigned int N, unsigned int DIM, 
     // check if at even index to add letter 
     else if(index % 2 == 0)
     {
-      //newWordArray[index] = (float)(rand() % 26);
-      //
+      //newWordArray[index] = (float)(rand() % 26); 
       newWordArray[index] = (float)(rand() % 20);
     }
     // process frequencies
@@ -750,15 +751,84 @@ to the host. You will add the elements in this array on the host to determine th
 instances that points were within epsilon of each other. */
 
 //BEGIN GPU CODE
-__device__ int generateRandomNumber(int startIdx, int endIdx)
+__device__ float generateRandomNumber(curandState *state, int endIdx)
 {
-  int tid = threadIdx.x + blockIdx.x * blockDim.x;
+  return curand(state) % (endIdx + 1);
+}
 
-  curandState state;
-  //curand_init(42, tid, 0, &state);
+__global__ void generateWordsBaseline(float * dataset, float * distanceArray, const unsigned int N, const unsigned int DIM)
+{
+  unsigned int tid = threadIdx.x + blockIdx.x * blockDim.x;
+
+  if(tid < N)
+  {
+    // variable declaration
+    float *distanceArray = new float[N]; // local var for distance array
+    float * newWordArr = new float[DIM]; // array for storing new word
+    int *KNNSetArr = new float[NUMNEIGHBORS]; // array to store location of neighbors
+
+    //Compute distance array for the current point
+
+    double tstart = omp_get_wtime();
+    int newWordIdx = 1;
+    float encodedLetter;
+
+    // assign all values on KNNSetArr to 0
+    if(tid < NUMNEIGHBORS)
+    {
+      KNNSetArr[tid] = 0;
+    }
+
+    __syncthreads();
+    // generate random encoded letter from dataset
+    float randomN = generateRandomNumer(state, N);
+    encodedLetter = dataset[randomN * DIM + 0];
+
+    __syncthreads();
+
+    if(tid < DIM)
+    {
+      //assign random letter to zero index
+      if(tid == 0)
+      {
+        newWordArr[0] = encodedLetter;
+      }
+      else if( tid % 2 == 0)
+      {
+        newWordArr[tid] = generateRandomNumber(state, 20); // change to var
+      }
+      else
+      {
+        newWordArr[tid] = generateRandomNumber(state, 10) + tid;
+      }
+
+      __syncthreads();
+
+      bool wordEnd = false;
+      if(!wordEnd && tid > 0)
+      {
+        if(newWordIdx == tid)
+        {
+          // need calcDistanceArrayGPU written and called
+
+          // need calcKNNGPU written and called
+
+          // need to set end of word and call selectRandomNeighborGPU
+        }
+
+      }
+    }
+  }
 
 
-  
+if(tid == 0)
+{
+  // implement and call decodeWordGPU pass newWordArr and DIM
+}
+
+delete[] distanceArray;
+delete[] KNNSetArr;
+delete[] newWordArr;
 }
 
 /*
