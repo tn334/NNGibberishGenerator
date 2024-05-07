@@ -47,7 +47,7 @@ void calcKNN(float * distanceArray, const int NEARESTNEIGHBORS, unsigned int N, 
 
 bool selectRandomNeighbor(float * dataset, float * newWordArray, int * KNNSet, const int freqLocation, const int NEARESTNEIGHBORS, const int DIM);
 
-void decodeWord(float * newWordArray, int DIM);
+void decodeWord(float * wordToDecode, int offsetIndex, int DIM);
 
 void outputDistanceMatrixToFile(float * distanceMatrix, unsigned int N);
 
@@ -157,6 +157,11 @@ int main(int argc, char *argv[])
   // Optimization set 1: baseline of both kernels
   BLOCKDIM = BLOCKSIZE; 
   NBLOCKS = ceil(N*1.0/BLOCKSIZE*1.0);
+
+  // loop for DIM times
+  // Generate distanceMatrix -> change distanceMatrix to be N*WORDSTOGENERATE
+  // query distance matrix to find and select a nearest neighbor
+
   //Part 1: Compute distance matrix
   generateWordsBaseline<<<NBLOCKS, BLOCKDIM>>>(dev_dataset, dev_resultSet, dev_distance, NUMNEIGHBORS, N, DIM);
   }
@@ -169,13 +174,10 @@ int main(int argc, char *argv[])
   //Copy result set from the GPU
   gpuErrchk(cudaMemcpy(resultSet, dev_resultSet, sizeof(unsigned int)*WORDSTOGENERATE*DIM, cudaMemcpyDeviceToHost));
 
-  //Compute the sum of the result set array
-  unsigned int totalWithinEpsilon=0;
-
-  //Write code here
+  // Decode each word in resultSet
   for (unsigned int i = 0; i < N; i++)
   {
-    totalWithinEpsilon += resultSet[i];
+    decodeWord(resultSet, i*DIM, DIM);
   }
   
   printf("\nTotal number of points within epsilon: %u", totalWithinEpsilon);
@@ -385,7 +387,7 @@ void generateWordsCPU(float * dataset, unsigned int N, unsigned int DIM, const i
 
   }
 
-  decodeWord(newWordArray, DIM);
+  decodeWord(newWordArray, 0, DIM);
 
   free(newWordArray);
   free(distanceArray);
@@ -500,7 +502,7 @@ bool selectRandomNeighbor(float * dataset, float * newWordArray, int * KNNSet, c
 
 }
 
-void decodeWord(float * newWordArray, int DIM)
+void decodeWord(float * wordToDecode, int offsetIndex, int DIM)
 {
   printf("\n");
   int letterIndex = -1;
@@ -510,7 +512,7 @@ void decodeWord(float * newWordArray, int DIM)
                           'v', 'k', 'j', 'x', 'q', 'z'};
   for (int index = 0; index < DIM; index += 2)
   {
-    letterIndex = (int)newWordArray[index];
+    letterIndex = (int)wordToDecode[offsetIndex + index];
     if (letterIndex < 27)
     {
       printf("%c", decodeArray[letterIndex]);
