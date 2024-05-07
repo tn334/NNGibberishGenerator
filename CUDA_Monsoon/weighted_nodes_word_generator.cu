@@ -15,12 +15,21 @@
 #include <complex.h>
 #include <math.h>
 
+#include <curand_kernel.h>
+
 using namespace std;
 
+// GPU Constants
+// MODE 0 - CPU
+// MODE 1 - GPU BASELINE
+#define MODE 1
+#define BLOCKSIZE 1024
+
+// Global Constants
 #define ALPHABET_SIZE 26
 #define NODES_PER_COL 27
 #define MAX_WORD_SIZE 20
-#define WORDS_TO_CREATE 25
+#define WORDS_TO_CREATE 10000
 #define COMMA ','
 #define UNDERSCORE '_'
 #define UNDERSCORE_INDEX 26
@@ -29,13 +38,43 @@ struct GraphNode
 {
     char letter;
     float weights[NODES_PER_COL];
-    unsigned int count;
 };
 
+////////////////////////////////////////////////////////////////////////////////
+//                                GPU FUNCTIONS                               //
+////////////////////////////////////////////////////////////////////////////////
+//Error checking GPU calls
+#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
+{
+   if (code != cudaSuccess)
+   {
+      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+      if (abort) exit(code);
+   }
+}
+
+void warmUpGPU()
+{
+    printf("\nWarming up GPU for time trialing...\n");
+    cudaDeviceSynchronize();
+    return;
+}
+
+__global__ void createWordsBaseline(GraphNode *node_array, char *word_list);
+__device__ int charToIndex(char letter);
+__device__ float generateRandomFloat(int tid);
+__device__ char generateRandomLetter(int tid);
+
+////////////////////////////////////////////////////////////////////////////////
+//                                CPU FUNCTIONS                               //
+////////////////////////////////////////////////////////////////////////////////
 int char_to_index(char letter);
 void create_word(GraphNode network[][NODES_PER_COL]);
 void extract_details(const string word_data, string &extracted_word,
                                                           int extracted_freq[]);
+void flatten_network(GraphNode network[][NODES_PER_COL], 
+                      GraphNode flattened_array[MAX_WORD_SIZE * NODES_PER_COL]);
 double generate_random_float();
 char generate_random_letter();
 void get_char_pair(const string word, string &char_pair, const int current_char);
@@ -47,11 +86,22 @@ void print_network(GraphNode network[][NODES_PER_COL]);
 
 int main()
 {
-    int word_counter;
+    int word_counter, num_blocks, block_size;
+    double time_start, time_end;
     ifstream five_letter_dict;
+
     GraphNode node_network[MAX_WORD_SIZE][NODES_PER_COL];
+    GraphNode *flattened_array;
+    GraphNode *dev_flattened_array;
+
+    char *created_words;
+    char *dev_created_words;
+
+    time_start = omp_get_wtime();
 
     srand(time(NULL));
+
+    warmUpGPU();
 
     five_letter_dict.open("../Training Files/20_letter_frequency_list_padded.txt");
 
@@ -61,24 +111,180 @@ int main()
         return 1;
     }
 
+    flattened_array = (GraphNode *)
+                      malloc(sizeof(GraphNode) * MAX_WORD_SIZE * NODES_PER_COL);
+
+    created_words = (char *)
+                         malloc(sizeof(char) * WORDS_TO_CREATE * MAX_WORD_SIZE);
+
     initialize_network(node_network);
 
     populate_network(node_network, five_letter_dict);
 
     normalize_network_weights(node_network);
 
-    for(word_counter = 0; word_counter < WORDS_TO_CREATE; word_counter++)
+    if(MODE != 0)
     {
-        create_word(node_network);
+        printf("Using GPU...\n");
+
+        flatten_network(node_network, flattened_array);
+
+        gpuErrchk(cudaMalloc((GraphNode**)&dev_flattened_array, 
+                            sizeof(GraphNode) * MAX_WORD_SIZE * NODES_PER_COL));
+
+        gpuErrchk(cudaMemcpy(dev_flattened_array, flattened_array, 
+                              sizeof(GraphNode) * MAX_WORD_SIZE * NODES_PER_COL, 
+                                                       cudaMemcpyHostToDevice));
+
+        gpuErrchk(cudaMalloc((char **)&dev_created_words, 
+                               sizeof(char) * WORDS_TO_CREATE * MAX_WORD_SIZE));
+
+        num_blocks = (WORDS_TO_CREATE + BLOCKSIZE - 1) / BLOCKSIZE;;
+        block_size = BLOCKSIZE;
+
+        printf("Number of blocks created: %d\n", num_blocks);
+
+        createWordsBaseline<<<num_blocks, block_size>>>(dev_flattened_array,
+                                                             dev_created_words);
+
+        gpuErrchk(cudaMemcpy(created_words, dev_created_words, 
+       sizeof(char) * WORDS_TO_CREATE * MAX_WORD_SIZE, cudaMemcpyDeviceToHost));
+
+        cudaFree(dev_flattened_array);
+
+        cudaFree(dev_created_words);
+
+        for(int i = 0; i < WORDS_TO_CREATE; i++) 
+        {
+            printf("%i: ", i + 1);
+            for(int j = 0; j < MAX_WORD_SIZE; j++) 
+            {
+                printf("%c", created_words[j + i * MAX_WORD_SIZE]);
+            }
+            printf("\n");
+        }
+
     }
+
+    else
+    {
+        printf("Using CPU...\n");
+
+        for(word_counter = 0; word_counter < WORDS_TO_CREATE; word_counter++)
+        {
+            create_word(node_network);
+        }
+
+    }
+
+    // printf("%s\n", created_words[0]);
+
+    // for(int i = 0; i < WORDS_TO_CREATE && MODE != 0; i++)
+    // {
+    //     printf("%s\n", created_words[i]);
+    // }
 
     // print_network(node_network);
 
     five_letter_dict.close();
 
+    free(flattened_array);
+
+    free(created_words);
+
+    time_end = omp_get_wtime();
+
+    printf("Total time: %f\n", time_end - time_start);
+
     return 0;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+//                                GPU FUNCTIONS                               //
+////////////////////////////////////////////////////////////////////////////////
+__global__ void createWordsBaseline(GraphNode *node_array, char *word_list)
+{
+    int tid = threadIdx.x + blockDim.x * blockIdx.x;
+
+    float cumulative_sum;
+    float random_float = generateRandomFloat(tid);
+
+    char start_letter = generateRandomLetter(tid);
+    char word[MAX_WORD_SIZE];
+
+    int letter_index = charToIndex(start_letter);
+    int letter_count = 0;
+    int weight_index;
+
+    if(tid < WORDS_TO_CREATE)
+    {
+        word[0] = start_letter;
+
+        for (letter_count = 1; letter_count < MAX_WORD_SIZE; letter_count++)
+        {
+            cumulative_sum = 0.0f;
+            
+            for (weight_index = 0; weight_index < NODES_PER_COL; weight_index++)
+            {
+                cumulative_sum += node_array
+                           [letter_index + NODES_PER_COL * letter_count].weights
+                                                                 [weight_index];
+
+                if(cumulative_sum >= random_float)
+                {   
+                    letter_index = weight_index;
+
+                    word[letter_count] = node_array
+                           [letter_index + NODES_PER_COL * letter_count].letter;
+                    break;
+                }
+
+            }
+
+        }
+
+        // Copy the word to the word list
+        for(int i = 0; i < MAX_WORD_SIZE; i++) 
+        {
+            word_list[i + tid * MAX_WORD_SIZE] = word[i]; 
+        }
+
+    }
+
+}
+
+__device__ int charToIndex(char letter)
+{
+    if(letter == UNDERSCORE)
+    {
+        return UNDERSCORE_INDEX;
+    }
+
+    return letter - 'a';
+}
+
+__device__ float generateRandomFloat(int tid)
+{
+    curandState state;
+    curand_init(clock64(), tid, 0, &state);
+
+    return curand_uniform(&state);
+}
+
+__device__ char generateRandomLetter(int tid)
+{
+    int random_letter;
+    curandState state;
+    curand_init(clock64(), tid, 0, &state);
+
+    random_letter = curand(&state) % ALPHABET_SIZE;
+    
+    return 'a' + random_letter;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//                                CPU FUNCTIONS                               //
+////////////////////////////////////////////////////////////////////////////////
 int char_to_index(char letter) 
 {
     if (islower(letter)) 
@@ -103,7 +309,7 @@ void create_word(GraphNode network[][NODES_PER_COL])
     word.clear();
     word += start_letter;
 
-    for (current_row = 0; current_row < MAX_WORD_SIZE; current_row++)
+    for (current_row = 1; current_row < MAX_WORD_SIZE; current_row++)
     {
         cumulative_sum = 0.0f;
 
@@ -166,6 +372,25 @@ void extract_details(const string word_data, string &extracted_word,
 
 }
 
+void flatten_network(GraphNode network[][NODES_PER_COL], 
+                       GraphNode flattened_array[MAX_WORD_SIZE * NODES_PER_COL])
+{   
+
+    int current_col, current_node;
+
+    for (current_col = 0; current_col < MAX_WORD_SIZE; current_col++)
+    {
+
+        for (current_node = 0; current_node < NODES_PER_COL; current_node++)
+        {
+            flattened_array[current_node + NODES_PER_COL * current_col] = 
+                                             network[current_col][current_node];
+        }
+
+    }
+
+}
+
 double generate_random_float()
 {
     return (float)(rand()) / (float)(RAND_MAX);
@@ -209,8 +434,6 @@ void initialize_network(GraphNode network[][NODES_PER_COL])
             {
                 new_node.letter = UNDERSCORE;
             }
-
-            new_node.count = 0;
 
             network[current_row][current_node] = new_node;
 
