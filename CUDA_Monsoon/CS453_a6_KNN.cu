@@ -1,6 +1,6 @@
 //example of running the program: ./A5_similarity_search_starter 7490 5 10 bee_dataset_1D_feature_vectors.txt
 
-#include <curand.h>
+#include <curand_kernel.h>
 #include <time.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -60,13 +60,17 @@ int translateLetterSequel(char letterToTranslate);
 //Part 1: Computing the distance matrix 
 
 //Baseline kernel --- one thread per point/feature vector
-__device__ float generateRandomNumbers(int startIdx, int endIdx);
+__device__ float generateRandomNumbers(curandState *state, int endIdx);
 
-__global__ void generateWordsBaseline(float * dataset, float * resultSet, float * distanceArray, const unsigned int NUMNEIGHBORS, const unsigned int N, const unsigned int DIM);
+__global__ void setupResultSetBaseline(float * resultSet,  float * dataset, const unsigned int WTG, const unsigned int DIM, const unsigned int N);
 
-__global__ void setupResultSetBaseline(float * resultSet, const unsigned int WORDSTOGENERATE, const unsigned int DIM);
+__global__ void generateDistanceMatrixBaseline(float * dataset, float * resultSet, float * distanceMatrix, const unsigned int colIdx,
+                          const unsigned int WTG, const unsigned int N, const unsigned int DIM);
 
-//Part 2: querying the distance matrix
+__global__ void generateKNNBaseline(float * dataset, float * resultSet, float * distanceMatrix, const unsigned int WTG,
+                    const unsigned int NN, const unsigned int colIdx, const unsigned int N, const unsigned int DIM);
+
+//Part 2: 
 //__global__ void queryDistanceMatrixBaseline(float * distanceMatrix, const unsigned int N, const unsigned int DIM, const float epsilon, unsigned int * resultSet);
 
 int main(int argc, char *argv[])
@@ -81,50 +85,47 @@ int main(int argc, char *argv[])
   char inputFname[500];
   unsigned int N=0;
   unsigned int DIM=0;
-  unsigned int NUMNEIGHBORS = 0;
+  //const unsigned int NUMNEIGHBORS = K;
+  unsigned int WORDSTOGENERATE = NUMWORDSTOCREATE;
   //float epsilon=0;
 
-  if (argc != 5) {
+  if (argc != 4) {
     fprintf(stderr,"Please provide the following on the command line: N (number of lines in the file), dimensionality (number of coordinates per point), number of neighbors, dataset filename.\n");
     exit(0);
   }
 
   sscanf(argv[1],"%d",&N);
   sscanf(argv[2],"%d",&DIM);
-  sscanf(argv[3],"%d",&NUMNEIGHBORS);
   printf("N: %d\n", N);
   printf("DIM: %d\n", DIM);
   printf("Number of neighbors: %d\n", NUMNEIGHBORS);
-  strcpy(inputFname,argv[4]);
+  strcpy(inputFname,argv[3]);
 
   checkParams(N, DIM);
 
-  printf("\nAllocating the following amount of memory for the dataset: %f GiB", (sizeof(float)*N*DIM)/(1024*1024*1024.0));
+  printf("\nAllocating the following amount of memory for the dataset: %f GiB\n", (sizeof(float)*N*DIM)/(1024*1024*1024.0));
   //printf("\nAllocating the following amount of memory for the distance matrix: %f GiB", (sizeof(float)*N*N)/(1024*1024*1024.0));
   
 
   float * dataset=(float*)malloc(sizeof(float*)*DIM*N);
   importDataset(inputFname, N, DIM, dataset);
 
-
+  double tstart = omp_get_wtime();
 
   //CPU-only mode
   //It only computes the distance matrix but does not query the distance matrix
   if(MODE==0){
     // generate 100 words
-    double tstart = omp_get_wtime();
+    
     for (int index = 0; index < WORDSTOGENERATE; index++)
     {
       generateWordsCPU( dataset, N, DIM, NUMNEIGHBORS);
     }
     double tend = omp_get_wtime();
-    printf("\nTime to compute distance matrix on the CPU: %f", tend - tstart);
+    printf("\n[MODE: %d, N: %d]\nTotal time: %f", MODE, N, tend-tstart);
     printf("\nReturning after computing on the CPU");
     return(0);
   }
-  
-
-  double tstart=omp_get_wtime();
 
   //Allocate memory for the dataset
   float * dev_dataset;
@@ -137,33 +138,44 @@ int main(int argc, char *argv[])
 
 
   //For part 2 for querying the distance matrix
-  unsigned int * resultSet = (float *)calloc(WORDSTOGENERATE*DIM sizeof(float));
-  unsigned int * dev_resultSet;
+  float * resultSet = (float *)calloc(WORDSTOGENERATE*DIM, sizeof(float));
+  float * dev_resultSet;
   gpuErrchk(cudaMalloc((float**)&dev_resultSet, sizeof(float)*WORDSTOGENERATE*DIM));
   gpuErrchk(cudaMemcpy(dev_resultSet, resultSet, sizeof(float)*WORDSTOGENERATE*DIM, cudaMemcpyHostToDevice));
 
-  
+  float * dev_distanceMatrix;
+  //unsigned int * dev_KNNSets;
 
   //Baseline kernels
   if(MODE==1){
-  float * distanceArray=(float*)malloc(sizeof(float*)*N);
-  float * dev_distanceArray;
-  gpuErrchk(cudaMalloc((float**)&dev_distanceArray, sizeof(float)*N));
-  gpuErrchk(cudaMemCpy(dev_distanceArray, distanceArray, sizeof(float)*N, cudaMemcpyHostToDevice)); 
+  //float * distanceArray=(float*)malloc(sizeof(float*)*N);
+
+  gpuErrchk(cudaMalloc((float**)&dev_distanceMatrix, sizeof(float)*N*WORDSTOGENERATE));
+  //gpuErrchk(cudaMemCpy(dev_distanceArray, distanceArray, sizeof(float)*N, cudaMemcpyHostToDevice));
+  //gpuErrchk(cudaMalloc((unsigned int**)&dev_KNNSets, sizeof(unsigned int)*WORDSTOGENERATE*NUMNEIGHBORS));
+
     // generate our random starting words in resultSet baseline
-  unsigned int BLOCKDIM = BLOCKSIZE; 
+  unsigned int BLOCKDIM = BLOCKSIZE;
   unsigned int NBLOCKS = ceil((WORDSTOGENERATE*DIM*1.0)/BLOCKSIZE*1.0);
-  setupResultSetBaseline<<<NBLOCKS, BLOCKDIM>>>(dev_resultSet, WORDSTOGENERATE, DIM);
+  setupResultSetBaseline<<<NBLOCKS, BLOCKDIM>>>(dev_resultSet, dev_dataset, WORDSTOGENERATE, DIM, N);
   // Optimization set 1: baseline of both kernels
-  BLOCKDIM = BLOCKSIZE; 
-  NBLOCKS = ceil(N*1.0/BLOCKSIZE*1.0);
 
   // loop for DIM times
-  // Generate distanceMatrix -> change distanceMatrix to be N*WORDSTOGENERATE
-  // query distance matrix to find and select a nearest neighbor
+  for (int wordIdx = 1; wordIdx < DIM; wordIdx++) {
+      // Generate distanceMatrix -> change distanceMatrix to be N*WORDSTOGENERATE
+      // query distance matrix to find and select a nearest neighbor
+      BLOCKDIM = BLOCKSIZE; 
+      NBLOCKS = ceil((N*WORDSTOGENERATE*1.0)/(BLOCKSIZE*1.0));
+      //Part 1: Compute distance matrix
+      generateDistanceMatrixBaseline<<<NBLOCKS, BLOCKDIM>>>(dev_dataset, dev_resultSet, dev_distanceMatrix, wordIdx, WORDSTOGENERATE, N, DIM);
 
-  //Part 1: Compute distance matrix
-  generateWordsBaseline<<<NBLOCKS, BLOCKDIM>>>(dev_dataset, dev_resultSet, dev_distance, NUMNEIGHBORS, N, DIM);
+      cudaDeviceSynchronize();
+      BLOCKDIM = BLOCKSIZE; 
+      NBLOCKS = ceil((WORDSTOGENERATE*1.0)/(BLOCKSIZE*1.0));
+      // Part 2: Generate the set of K nearest neighbors and select one to add to the built words
+      // One thread each responsible for finding K nearest neighbors and selecting one at random
+      generateKNNBaseline<<<NBLOCKS, BLOCKDIM>>>(dev_dataset, dev_resultSet, dev_distanceMatrix, WORDSTOGENERATE, NUMNEIGHBORS, wordIdx, N, DIM);
+  }
   }
 
 
@@ -175,12 +187,10 @@ int main(int argc, char *argv[])
   gpuErrchk(cudaMemcpy(resultSet, dev_resultSet, sizeof(unsigned int)*WORDSTOGENERATE*DIM, cudaMemcpyDeviceToHost));
 
   // Decode each word in resultSet
-  for (unsigned int i = 0; i < N; i++)
+  for (unsigned int i = 0; i < WORDSTOGENERATE; i++)
   {
     decodeWord(resultSet, i*DIM, DIM);
   }
-  
-  printf("\nTotal number of points within epsilon: %u", totalWithinEpsilon);
 
   double tend=omp_get_wtime();
 
@@ -195,7 +205,7 @@ int main(int argc, char *argv[])
 
   //Free memory here
   gpuErrchk(cudaFree(dev_dataset));
-  gpuErrchk(cudaFree(dev_distanceArray));
+  gpuErrchk(cudaFree(dev_distanceMatrix));
   gpuErrchk(cudaFree(dev_resultSet));
   
   free(dataset);
@@ -307,7 +317,7 @@ void checkParams(unsigned int N, unsigned int DIM)
 }
 
 // Dependencies: translateLetter(), calcDistanceArrayCPU, calcKNN, selectRandomNeighbor
-void generateWordsCPU(float * dataset, unsigned int N, unsigned int DIM, const int NUMNEIGHBORS)
+void generateWordsCPU(float * dataset, unsigned int N, unsigned int DIM, const int NN)
 {
   // distance array holds location values for comparison between our word and all stored words AKA N
   float * distanceArray = (float*)malloc(sizeof(float)*N);
@@ -316,10 +326,10 @@ void generateWordsCPU(float * dataset, unsigned int N, unsigned int DIM, const i
   float encodedLetter;
   //float nextEncodedLetter;
   double tstart = omp_get_wtime();
-  int KNNSet[NUMNEIGHBORS];
+  int KNNSet[NN];
 
  // loop through all values of KNN
-  for (int i = 0; i < NUMNEIGHBORS; i++)
+  for (int i = 0; i < NN; i++)
   {
     KNNSet[i] = -1;
   }
@@ -455,7 +465,7 @@ void calcDistanceArrayCPU(float * dataset, float * distanceArray, float * newWor
     {
       totalDistSquared = 0.0;
       //for(wordIdx = 0; wordIdx < DIM; wordIdx++)
-      for(wordIdx = 0; wordIdx < workingLetterIndex + 1; wordIdx++)
+      for(wordIdx = 0; wordIdx < workingLetterIndex; wordIdx++)
       {
         totalDistSquared += (newWordArr[wordIdx]- dataset[(row * DIM )+ wordIdx]) * (newWordArr[wordIdx]-dataset[(row * DIM) + wordIdx]);
       }
@@ -466,11 +476,11 @@ void calcDistanceArrayCPU(float * dataset, float * distanceArray, float * newWor
     }
 }
 
-bool selectRandomNeighbor(float * dataset, float * newWordArray, int * KNNSet, const int newLocation, const int NUMNEIGHBORS, const int DIM)
+bool selectRandomNeighbor(float * dataset, float * newWordArray, int * KNNSet, const int newLocation, const int NN, const int DIM)
 {
   bool wordEnd = false;
   // get random neighbor between 0 and 9
-  int randomNeighbor = rand() % NUMNEIGHBORS;
+  int randomNeighbor = rand() % NN;
 
   //int letterLocation = freqLocation + 1;
   // get index of next word from KNNSet
@@ -505,6 +515,7 @@ bool selectRandomNeighbor(float * dataset, float * newWordArray, int * KNNSet, c
 void decodeWord(float * wordToDecode, int offsetIndex, int DIM)
 {
   printf("\n");
+  bool wordEnd = false;
   int letterIndex = -1;
   char decodeArray[27] = {'e', 't', 'a', 'o', 'i', 'n', 's',
                           'h', 'r', 'd', 'l', 'c', '_', 'u',
@@ -513,9 +524,10 @@ void decodeWord(float * wordToDecode, int offsetIndex, int DIM)
   for (int index = 0; index < DIM; index += 2)
   {
     letterIndex = (int)wordToDecode[offsetIndex + index];
-    if (letterIndex < 27)
+    if (letterIndex < 27 && !wordEnd)
     {
       printf("%c", decodeArray[letterIndex]);
+      wordEnd = letterIndex == 12; 
     }
     else
     {
@@ -757,395 +769,92 @@ instances that points were within epsilon of each other. */
 //BEGIN GPU CODE
 __device__ float generateRandomNumber(curandState *state, int endIdx)
 {
-  return curand(state) % (endIdx + 1);
+  return (float)(curand(state) % (endIdx));
 }
 
 // setting up resultSet
-__global__ void setupResultSetBaseline(float * resultSet, const unsigned int WORDSTOGENERATE, const unsigned int DIM)
+__global__ void setupResultSetBaseline(float * resultSet, float * dataset, const unsigned int WTG, const unsigned int DIM, const unsigned int N)
 {
   unsigned int tid = threadIdx.x + blockIdx.x * blockDim.x;
-  curandState *state;
-  float randomN = generateRandomNumer(state, N);
-  encodedLetter = dataset[randomN * DIM + 0];
+  curandState state;
+  curand_init(42, tid, 0, &state);
 
-  if(tid < DIM * WORDSTOGENERATE)
+  if(tid < DIM * WTG)
   {
     //assign random letter to zero index
       if(tid % DIM == 0)
       {
+        float randomN = generateRandomNumber(&state, N);
+        float encodedLetter = dataset[(int)randomN * DIM + 0];
+        // Assign the first letter to a value of a letter with the frequency of first letters in the dataset
         resultSet[tid] = encodedLetter;
-      }
-      else if( tid % 2 == 0)
-      {
-        resultSet[tid] = generateRandomNumber(state, 20); // change to var
       }
       else
       {
-        resultSet[tid] = generateRandomNumber(state, 10) + (tid%DIM);
+        // Assign letter vectors a value between 0 and 26, assign frequency vectors to a value between 0 and 13
+        resultSet[tid] = generateRandomNumber(&state, 20) - ((tid % DIM) % 2) * tid / DIM;
       }
   }
 }
 
-__global__ void generateWordsBaseline(float * dataset, float * resultSet, float * distanceArray, 
-                  const unsigned int NUMNEIGHBORS, const unsigned int N, const unsigned int DIM)
+__global__ void generateDistanceMatrixBaseline(float * dataset, float * resultSet, float * distanceMatrix, const unsigned int colIdx,
+                          const unsigned int WTG, const unsigned int N, const unsigned int DIM)
 {
   unsigned int tid = threadIdx.x + blockIdx.x * blockDim.x;
-
-  // variable declaration  
-  if (tid < NUMNEIGHBORS)
-  {
-    __shared__ KNNSet[NUMNEIGHBORS];
-  }
-
-
-  //Compute distance array for the current point
-  if(tid < N)
+  unsigned int resultRow = tid / N;
+  unsigned int datasetRow = tid % N;
+  if(tid < N*WTG)
   {
     int dimIdx;
     float totalDistSquared = 0.0;
-    for(dimIdx = 0; dimIdx < DIM; dimIdx++)
+    for(dimIdx = 0; dimIdx < colIdx + 1; dimIdx++)
     {
-      totalDistSquared += (resultSet[dimIdx]- dataset[(tid * DIM )+ dimIdx]) * (resultSet[dimIdx]-dataset[(tid * DIM) + dimIdx]);
+      totalDistSquared += (resultSet[resultRow*DIM + dimIdx]- dataset[(datasetRow * DIM )+ dimIdx]) * (resultSet[(resultRow*DIM) + dimIdx] - dataset[(datasetRow * DIM) + dimIdx]);
     }
-    distanceArray[tid] = sqrtf(totalDistSquared);
+    distanceMatrix[tid] = sqrtf(totalDistSquared);
   }
+}
 
+  // Part 2: Generate the set of K nearest neighbors and select one to add to the built words
+  __global__ void generateKNNBaseline(float * dataset, float * resultSet, float * distanceMatrix, const unsigned int WTG,
+                  const unsigned int NN, const unsigned int colIdx, const unsigned int N, const unsigned int DIM)
+{
+  unsigned int tid = threadIdx.x + blockIdx.x * blockDim.x;
   
-
-  if(tid < NUMNEIGHBORS)
+  int KNNSet[NUMNEIGHBORS];
+  for (int i = 0 ; i < NN; i++)
   {
-    //each thread must calc one neighbor for neighborIdx
-    KNNSet[tid] = -1;
-    float currentMin = 1000000.0;
-
-    for(int idx = 0; idx < N; idx++)
-    {
-      if 
-    }
+    KNNSet[i] = -i;
   }
-  // calculate KNN
-  // assign all values on KNNSetArr to 0
-/*   if(tid < NUMNEIGHBORS)
+  float foundMin;
+  bool skipIdx = false;
+  curandState state;
+  curand_init(42, tid, 0, &state);
+
+  //resultSet instead of newWordArr
+  if(tid < WTG)
   {
-    KNNSetArr[tid] = 0;
-  }
- */
-
-  // generate random encoded letter from dataset
-  float randomN = generateRandomNumer(state, N);
-  encodedLetter = dataset[randomN * DIM + 0];
-
-  __syncthreads();
-
-  if(tid < DIM)
-  {
-    bool wordEnd = false;
-    if(!wordEnd && tid > 0)
-    {
-      if(newWordIdx == tid)
+    //loop through one row in the distanceMatrix
+    for(int minNeighborIdx = 0; minNeighborIdx < NN; minNeighborIdx++)
+    { 
+      foundMin = DEFAULT_MIN;
+      for (int distanceIdx = 0 ; distanceIdx < N; distanceIdx++)
       {
-        // need calcDistanceArrayGPU written and called
-
-        // need calcKNNGPU written and called
-        //CPU CODE
-
-
-        // need to set end of word and call selectRandomNeighborGPU
-      }
-
-    }
-  }
-
-
-
-if(tid == 0)
-{
-  // implement and call decodeWordGPU pass newWordArr and DIM
-}
-
-delete[] distanceArray;
-delete[] KNNSetArr;
-delete[] newWordArr;
-}
-
-/*
-__global__ void queryDistanceMatrixBaseline(float * distanceMatrix, const unsigned int N, const unsigned int DIM, const float epsilon, unsigned int * resultSet)
-{
-  //write code here
-  unsigned int tid = threadIdx.x + (blockIdx.x * blockDim.x);
-
-  if (tid < N)
-  {
-    resultSet[tid] = 0;
-    for (unsigned int i = 0; i < N; i++)
-    {
-      // future modes could load in chunks of this array into shared memory
-      if (distanceMatrix[tid*N+i] <= epsilon)
-      {
-        // future modes could use a local counter
-        resultSet[tid] += 1;
-      }
-    }
-  }
-}
-
-__global__ void queryDistanceMatrixRegisters(float * distanceMatrix, const unsigned int N, const unsigned int DIM, const float epsilon, unsigned int * resultSet)
-{
-  //write code here
-  unsigned int tid = threadIdx.x + (blockIdx.x * blockDim.x);
-  unsigned int neighborCount = 0;
-
-  if (tid < N)
-  {
-    for (unsigned int i = 0; i < N; i++)
-    {
-      // future modes could load in chunks of this array into shared memory
-      if (distanceMatrix[i*N+tid] <= epsilon)
-      {
-        // future modes could use a local counter
-        neighborCount++;
-      }
-    }
-    resultSet[tid] = neighborCount;
-  }
-}
-
-__global__ void queryDistanceMatrixReduction(float * distanceMatrix, const unsigned int N, const unsigned int DIM, const float epsilon, unsigned int * resultSet)
-{
-    //write code here
-  unsigned int tid = threadIdx.x + (blockIdx.x * blockDim.x);
-  __shared__ int sharedMatrix[BLOCKSIZE];
-
-  //Use local registers
-  //unsigned int neighborCount = 0;
-    // run through columns
-    for (unsigned int i = 0; i < N; i++)
-    {
-      // check if the index in distance matrix is less than or equal to epsilon
-        // tid * N gets us rows
-          // + i runs us through the individual values in the row
-      if (tid < N && distanceMatrix[tid*N+i] <= epsilon)
-      {
-        // increment count
-        sharedMatrix[threadIdx.x] += 1;
-      }
-    }
-  __syncthreads(); // finish threads writing to shared mem
-  for(unsigned int stride = blockDim.x/2; stride > 0; stride /= 2)
-  {
-    if(threadIdx.x < stride){
-      sharedMatrix[threadIdx.x] += sharedMatrix[threadIdx.x + stride];
-    }
-    __syncthreads();
-  }
-  if(threadIdx.x==0)
-  {
-    atomicAdd(&resultSet[tid], sharedMatrix[0]);
-  }
-}
-
-//One thread per feature vector -- baseline kernel
-__global__ void distanceMatrixBaseline(float * dataset, float * distanceMatrix, const unsigned int N, const unsigned int DIM)
-{
-  //write code here
-
-  // each thread assigned 1 point in the dataset
-  // DIM=135000
-  // dataset[rowCnt*DIM+colCnt]
-  
-  unsigned int tid = threadIdx.x + (blockDim.x * blockIdx.x);
-  if (tid < N)
-  {
-    unsigned int tidRow = tid*DIM;
-    float sumOfSquaredDiffs;
-    for (unsigned int otherRow = 0; otherRow < N; otherRow++)
-    {
-      sumOfSquaredDiffs = 0;
-      for (unsigned int column = 0; column < DIM; column++)
-      {
-        // sum square this point's column and other point's column
-        sumOfSquaredDiffs += (dataset[tidRow+column] - dataset[otherRow*DIM+column]) * (dataset[tidRow+column] - dataset[otherRow*DIM+column]);
-      }
-      // square root the sum up to this point + write it to distanceMatrix
-      distanceMatrix[tid*N+otherRow] = sqrtf(sumOfSquaredDiffs);
-    }
-  }
-}
-
-// Calculate half of the distance matrix and save it for two positions of the matrix
-__global__ void distanceMatrixMirrorCalculation(float * dataset, float * distanceMatrix, const unsigned int N, const unsigned int DIM)
-{
-  unsigned int tid = threadIdx.x + (blockDim.x * blockIdx.x);
-  if (tid < N)
-  {
-    unsigned int tidRow = tid*DIM;
-    float sumOfSquaredDiffs;
-    for (unsigned int otherRow = tid + 1; otherRow < N; otherRow++)
-    {
-      sumOfSquaredDiffs = 0;
-      for (unsigned int column = 0; column < DIM; column++)
-      {
-        // sum square this point's column and other point's column
-        sumOfSquaredDiffs += (dataset[tidRow+column] - dataset[otherRow*DIM+column]) * (dataset[tidRow+column] - dataset[otherRow*DIM+column]);
-      }
-      // square root the sum up to this point + write it to distanceMatrix
-      float totalDistance = sqrtf(sumOfSquaredDiffs);
-      // mirror of this element is given by otherRow*N + tid
-      distanceMatrix[tid*N+otherRow] = totalDistance;
-      distanceMatrix[otherRow*N + tid] = totalDistance;
-    }
-  }
-}
-
-__global__ void distanceMatrixMirrorCalculationInverted(float * dataset, float * distanceMatrix, const unsigned int N, const unsigned int DIM)
-{
-  unsigned int tid = threadIdx.x + (blockDim.x * blockIdx.x);
-  if (tid < N)
-  {
-    unsigned int tidRow = tid*DIM;
-    float sumOfSquaredDiffs;
-    for (unsigned int otherRow = N-1; otherRow > tid; otherRow--)
-    {
-      sumOfSquaredDiffs = 0;
-      for (unsigned int column = 0; column < DIM; column++)
-      {
-        // sum square this point's column and other point's column
-        sumOfSquaredDiffs += (dataset[tidRow+column] - dataset[otherRow*DIM+column]) * (dataset[tidRow+column] - dataset[otherRow*DIM+column]);
-      }
-      // square root the sum up to this point + write it to distanceMatrix
-      float totalDistance = sqrtf(sumOfSquaredDiffs);
-      // mirror of this element is given by otherRow*N + tid
-      distanceMatrix[tid*N+otherRow] = totalDistance;
-      distanceMatrix[otherRow*N + tid] = totalDistance;
-    }
-  }
-}
-
-__global__ void distanceMatrixCalculationSharedMemory(float * dataset, float * distanceMatrix, const unsigned int N, const unsigned int DIM)
-{
-  unsigned int tid = threadIdx.x + (blockDim.x * blockIdx.x);
-  __shared__ int sharedMemoryBlock[WIDTH*HEIGHT];
-  // declare a register array for HEIGHT other rows to accumulate to
-  float sumOfSquaredDiffs[HEIGHT];
-  // declare a register array for WIDTH number of ints from global dataset
-  int dimensionSet[WIDTH];
-  // declare shared memory array of ints for WIDTH*N elements to page into
-  // enter loop to horizontally page chunks of dataset into shared memory
-  for (unsigned int vStride = 0; vStride < N; vStride += HEIGHT)
-  {
-    // loop to reset all the sums to 0 since we're on a new set of rows
-    for (unsigned int resetIndex=0; resetIndex < HEIGHT; resetIndex++)
-    {
-        sumOfSquaredDiffs[resetIndex] = 0.000;
-    }
-    // enter loop to vertically page chunks of dataset into shared memory
-    for (unsigned int hStride = 0; hStride < DIM; hStride += WIDTH)
-    {
-      for (unsigned int registerIndex = 0; registerIndex < WIDTH; registerIndex++)
-      {
-        if (tid < N)
+        skipIdx = false;
+        for (int foundMinIdx = 0; foundMinIdx < minNeighborIdx && !skipIdx; foundMinIdx++)
         {
-          dimensionSet[registerIndex] = dataset[tid*DIM+hStride+registerIndex];
+          skipIdx = distanceIdx == KNNSet[foundMinIdx];
         }
-      }
-
-      // Load in a block of shared memory
-      if (threadIdx.x < WIDTH)
-      {
-        for (unsigned int pagingIndex = 0; pagingIndex < HEIGHT; pagingIndex++)
+        if (!skipIdx && distanceMatrix[tid*N + distanceIdx] < foundMin)
         {
-          sharedMemoryBlock[pagingIndex*WIDTH + threadIdx.x] = dataset[(vStride+pagingIndex)*DIM+hStride+threadIdx.x];
+          foundMin = distanceMatrix[tid*N + distanceIdx];
+          KNNSet[minNeighborIdx] = distanceIdx;
         }
-      }
-      __syncthreads();
-      for (unsigned int otherRow = 0; otherRow < HEIGHT; otherRow++)
-      {
-        for (unsigned int column = 0; column < WIDTH; column++)
-        {
-          // sum square this point's column and other point's column
-          if (tid < N)
-          {
-          sumOfSquaredDiffs[otherRow] += (dimensionSet[column] - sharedMemoryBlock[otherRow*WIDTH+column]) * (dimensionSet[column] - sharedMemoryBlock[otherRow*WIDTH+column]);
-          }
-        }
-        // mirror of this element is given by otherRow*N + tid
-        //distanceMatrix[tid*N+vStride+otherRow] += sumOfSquaredDiffs;
-        //end of for loop for otherRow
-        if (tid < N && hStride+WIDTH == DIM)
-        {
-          distanceMatrix[tid*N+otherRow+vStride] = sqrtf(sumOfSquaredDiffs[otherRow]);
-        }
-
-      }
-      //end of for loop for horizontal stride
-    } 
-    //end of for loop for vertical stride
-  }
-}
-
-__global__ void distanceMatrixMirrorCalculationSharedMemory(float * dataset, float * distanceMatrix, const unsigned int N, const unsigned int DIM)
-{
-  unsigned int tid = threadIdx.x + (blockDim.x * blockIdx.x);
-  __shared__ int sharedMemoryBlock[WIDTH*HEIGHT];
-  // declare a register array for HEIGHT other rows to accumulate to
-  float sumOfSquaredDiffs[HEIGHT];
-  // declare a register array for WIDTH number of ints from global dataset
-  int dimensionSet[WIDTH];
-  // declare shared memory array of ints for WIDTH*N elements to page into
-  // enter loop to horizontally page chunks of dataset into shared memory
-  for (int vStride = N-HEIGHT; vStride >= (int)(tid/HEIGHT)*HEIGHT; vStride -= HEIGHT)
-  {
-    // loop to reset all the sums to 0 since we're on a new set of rows
-    for (unsigned int resetIndex=0; resetIndex < HEIGHT; resetIndex++)
-    {
-        sumOfSquaredDiffs[resetIndex] = 0.000;
+      } 
     }
-    // enter loop to vertically page chunks of dataset into shared memory
-    for (unsigned int hStride = 0; hStride < DIM; hStride += WIDTH)
-    {
-      for (unsigned int registerIndex = 0; registerIndex < WIDTH; registerIndex++)
-      {
-        if (tid < N)
-        {
-          dimensionSet[registerIndex] = dataset[tid*DIM+hStride+registerIndex];
-        }
-      }
-
-      // Load in a block of shared memory
-      if (threadIdx.x < WIDTH)
-      {
-        for (unsigned int pagingIndex = 0; pagingIndex < HEIGHT; pagingIndex++)
-        {
-          if (tid < N)
-          {
-            sharedMemoryBlock[pagingIndex*WIDTH + threadIdx.x] = dataset[(vStride+pagingIndex)*DIM+hStride+threadIdx.x];
-          }
-        }
-      }
-      __syncthreads();
-      for (unsigned int otherRow = 0; otherRow < HEIGHT; otherRow++)
-      {
-        for (unsigned int column = 0; column < WIDTH; column++)
-        {
-          // sum square this point's column and other point's column
-          if (tid < N)
-          {
-          sumOfSquaredDiffs[otherRow] += (dimensionSet[column] - sharedMemoryBlock[otherRow*WIDTH+column]) * (dimensionSet[column] - sharedMemoryBlock[otherRow*WIDTH+column]);
-          }
-        }
-        // mirror of this element is given by otherRow*N + tid
-        //distanceMatrix[tid*N+vStride+otherRow] += sumOfSquaredDiffs;
-        //end of for loop for otherRow
-        if (tid < N && hStride+WIDTH == DIM && tid != vStride+otherRow)
-        {
-            distanceMatrix[(tid*N)+otherRow+vStride] = sqrtf(sumOfSquaredDiffs[otherRow]);
-            distanceMatrix[(vStride+otherRow)*N+tid] = sqrtf(sumOfSquaredDiffs[otherRow]);
-        }
-
-      }
-      //end of for loop for horizontal stride
-    } 
-    //end of for loop for vertical stride
+    int randomNeighbor = (int)generateRandomNumber(&state, NN);
+    resultSet[tid * DIM + colIdx] = dataset[KNNSet[randomNeighbor]*DIM + colIdx];
+    
   }
+
 }
-*/
