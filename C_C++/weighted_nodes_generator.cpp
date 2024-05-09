@@ -19,18 +19,18 @@ struct GraphNode
     unsigned int count;
 };
 
+int char_to_index(char letter);
+void create_word(GraphNode network[][NODES_PER_COL]);
+void extract_details(const string word_data, string &extracted_word,
+                                                          int extracted_freq[]);
+double generate_random_float();
+char generate_random_letter();
+void get_char_pair(const string word, string &char_pair, const int current_char);
 void initialize_network(GraphNode network[][NODES_PER_COL]);
+void normalize_network_weights(GraphNode network[][NODES_PER_COL]);
 void populate_network(GraphNode network[][NODES_PER_COL],
                                                     ifstream &five_letter_dict);
 void print_network(GraphNode network[][NODES_PER_COL]);
-void extract_details(const string word_data, string &extracted_word,
-                                                          int extracted_freq[]);
-void get_char_pair(const string word, string &char_pair, const int current_char);
-int char_to_index(char letter);
-void normalize_network_weights(GraphNode network[][NODES_PER_COL]);
-void create_word(GraphNode network[][NODES_PER_COL]);
-double generate_random_float();
-char generate_random_letter();
 
 int main()
 {
@@ -61,14 +61,14 @@ int main()
     return 0;
 }
 
-double generate_random_float()
+int char_to_index(char letter) 
 {
-    return (float)(rand()) / (float)(RAND_MAX);
-}
+    if (islower(letter)) 
+    {
+        return letter - 'a';
+    }
 
-char generate_random_letter()
-{
-    return 'a' + (rand() % 26);
+    return letter - 'A';
 }
 
 void create_word(GraphNode network[][NODES_PER_COL])
@@ -91,7 +91,8 @@ void create_word(GraphNode network[][NODES_PER_COL])
 
         for (weight_index = 0; weight_index < NODES_PER_COL; weight_index++)
         {
-            cumulative_sum += network[current_row][letter_index].weights[weight_index];
+            cumulative_sum += 
+                       network[current_row][letter_index].weights[weight_index];
 
             if(cumulative_sum >= random_float)
             {   
@@ -105,6 +106,63 @@ void create_word(GraphNode network[][NODES_PER_COL])
     }
 
     cout << word << "\n\n";
+}
+
+void extract_details(const string word_data, string &extracted_word,
+                                                           int extracted_freq[])
+{
+    int freq_index = 0;
+    size_t index = 0;
+    size_t digit_index;
+    string current_freq;
+
+    extracted_word.clear();
+
+    for (index = 0; index < word_data.length(); index++)
+    {
+        if (isalpha(word_data[index]))
+        {
+            extracted_word += word_data[index];
+        }
+
+        else if (isdigit(word_data[index]))
+        {
+            digit_index = index;
+
+            while (word_data[digit_index] != COMMA &&
+                                               digit_index < word_data.length())                                        
+            {
+                digit_index++;
+            }
+
+            current_freq = word_data.substr(index, digit_index - index);
+
+            extracted_freq[freq_index] = stoi(current_freq);
+
+            freq_index++;
+
+            index = digit_index;
+        }
+
+    }
+
+}
+
+double generate_random_float()
+{
+    return (float)(rand()) / (float)(RAND_MAX);
+}
+
+char generate_random_letter()
+{
+    return 'a' + (rand() % ALPHABET_SIZE);
+}
+
+void get_char_pair(const string word, string &char_pair, const int current_char)
+{
+    char_pair.clear();
+    char_pair += word[current_char];
+    char_pair += word[current_char + 1];
 }
 
 void initialize_network(GraphNode network[][NODES_PER_COL])
@@ -130,6 +188,37 @@ void initialize_network(GraphNode network[][NODES_PER_COL])
             network[current_row][current_node] = new_node;
 
             letter = (char)((int)letter + 1);
+        }
+
+    }
+
+}
+
+void normalize_network_weights(GraphNode network[][NODES_PER_COL])
+{
+    int current_row, current_node, weight_index;
+    float total_weight_sum;
+
+    for(current_row = 0; current_row < MAX_WORD_SIZE; current_row++)
+    {
+        for(current_node = 0; current_node < NODES_PER_COL; current_node++)
+        {
+            total_weight_sum = 0;
+
+            for(weight_index = 0; weight_index < NODES_PER_COL; weight_index++)
+            {
+                total_weight_sum += network[current_row][current_node].weights[weight_index];
+            }
+
+            for(weight_index = 0; weight_index < NODES_PER_COL; weight_index++)
+            {
+                if(total_weight_sum != 0)
+                {
+                    network[current_row][current_node].weights[weight_index] /= total_weight_sum;
+                }
+
+            }
+
         }
 
     }
@@ -188,94 +277,6 @@ void print_network(GraphNode network[][NODES_PER_COL])
             {
                 printf("   Weight #%d: %f\n", weight_index, 
                    network[current_row][current_node].weights[weight_index]);
-            }
-
-        }
-
-    }
-
-}
-
-void extract_details(const string word_data, string &extracted_word,
-                                                           int extracted_freq[])
-{
-    int freq_index = 0;
-    size_t index = 0;
-    size_t digit_index;
-    string current_freq;
-
-    extracted_word.clear();
-
-    for (index = 0; index < word_data.length(); index++)
-    {
-        if (isalpha(word_data[index]))
-        {
-            extracted_word += word_data[index];
-        }
-
-        else if (isdigit(word_data[index]))
-        {
-            digit_index = index;
-
-            while (word_data[digit_index] != COMMA &&
-                                               digit_index < word_data.length())                                        
-            {
-                digit_index++;
-            }
-
-            current_freq = word_data.substr(index, digit_index - index);
-
-            extracted_freq[freq_index] = stoi(current_freq);
-
-            freq_index++;
-
-            index = digit_index;
-        }
-
-    }
-
-}
-
-void get_char_pair(const string word, string &char_pair, const int current_char)
-{
-    char_pair.clear();
-    char_pair += word[current_char];
-    char_pair += word[current_char + 1];
-}
-
-int char_to_index(char letter) 
-{
-    if (islower(letter)) 
-    {
-        return letter - 'a';
-    }
-
-    return letter - 'A';
-}
-
-void normalize_network_weights(GraphNode network[][NODES_PER_COL])
-{
-    int current_row, current_node, weight_index;
-    float total_weight_sum;
-
-    for(current_row = 0; current_row < MAX_WORD_SIZE; current_row++)
-    {
-        for(current_node = 0; current_node < NODES_PER_COL; current_node++)
-        {
-            total_weight_sum = 0;
-
-            for(weight_index = 0; weight_index < NODES_PER_COL; weight_index++)
-            {
-                total_weight_sum += network[current_row][current_node].weights[weight_index];
-            }
-
-            for(weight_index = 0; weight_index < NODES_PER_COL; weight_index++)
-            {
-                if(total_weight_sum != 0)
-                {
-                    network[current_row][current_node].weights[weight_index] /= total_weight_sum;
-                }
-
             }
 
         }
